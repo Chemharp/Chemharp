@@ -7,6 +7,7 @@
 #include <array>
 #include <vector>
 #include <algorithm> // IWYU pragma: keep
+#include <string>
 
 #include "chemfiles/sorted_set.hpp"
 #include "chemfiles/exports.h"
@@ -317,7 +318,17 @@ public:
     const sorted_set<Improper>& impropers() const;
 
     /// Add a bond between the atoms `i` and `j`
-    void add_bond(size_t i, size_t j, Bond::BondOrder bond_order = Bond::UNKNOWN);
+    void add_bond(size_t i, size_t j, Bond::BondOrder bond_order = Bond::UNKNOWN, std::string bond_type = "");
+
+    /// Add an angle between the atoms `i`, `j` and `k`
+    void add_angle(size_t i, size_t j, size_t k, std::string angle_type = "");
+
+    /// Add a dihedral angle between the atoms `i`, `j`, `k` and `l`
+    void add_dihedral(size_t i, size_t j, size_t k, size_t l, std::string dihedral_type = "");
+
+    /// Add an improper dihedral angle between the atoms `i`, `j`, `k` and `l`
+    void add_improper(size_t i, size_t j, size_t k, size_t l, std::string improper_type = "");
+
 
     /// Remove any bond between the atoms `i` and `j`
     void remove_bond(size_t i, size_t j);
@@ -330,6 +341,18 @@ public:
 
     /// Get the bond order of the bond between i and j
     Bond::BondOrder bond_order(size_t i, size_t j) const;
+
+    /// Get the bond type of the bond between i and j
+    const std::string& bond_type(size_t i, size_t j) const;
+
+    /// Get the angle type of the angle between i, j and k
+    const std::string& angle_type(size_t i, size_t j, size_t k) const;
+
+    /// Get the dihedral type of the dihedral between i, j, k and l
+    const std::string& dihedral_type(size_t i, size_t j, size_t k, size_t l) const;
+
+    /// Get the improper type of the improper between i, j, k and l
+    const std::string& improper_type(size_t i, size_t j, size_t k, size_t l) const;
 private:
     /// Recalculate the angles and the dihedrals from the bond list
     void recalculate() const;
@@ -349,6 +372,14 @@ private:
     mutable bool uptodate_ = false;
     /// Store the bond orders
     std::vector<Bond::BondOrder> bond_orders_;
+    /// Store the bond types
+    mutable std::vector<std::string> bond_types_;
+    /// Store the angle types
+    mutable std::vector<std::string> angle_types_;
+    /// Store the dihedral types
+    mutable std::vector<std::string> dihedral_types_;
+    /// Store the improper types
+    mutable std::vector<std::string> improper_types_;
 };
 
 } // namespace chemfiles

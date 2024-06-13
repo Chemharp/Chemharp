@@ -68,10 +68,10 @@ public:
     DataTypes(const Topology& topology = Topology());
 
     const sorted_set<atom_type>& atoms() const {return atoms_;}
-    const sorted_set<bond_type>& bonds() const {return bonds_;}
-    const sorted_set<angle_type>& angles() const {return angles_;}
-    const sorted_set<dihedral_type>& dihedrals() const {return dihedrals_;}
-    const sorted_set<improper_type>& impropers() const {return impropers_;}
+    const sorted_set<std::tuple<bond_type, std::string>>& bonds() const {return bonds_;}
+    const sorted_set<std::tuple<angle_type, std::string>>& angles() const {return angles_;}
+    const sorted_set<std::tuple<dihedral_type, std::string>>& dihedrals() const {return dihedrals_;}
+    const sorted_set<std::tuple<improper_type, std::string>>& impropers() const {return impropers_;}
 
     /// Get the atom type number for the given atom.
     ///
@@ -85,37 +85,37 @@ public:
     /// The bond type must be in the topology used to construct this `DataTypes`
     /// instance. The index numbering starts at zero, and can be used to index
     /// the vector backing the `sorted_set<bond_type>` returned by `bonds()`.
-    size_t bond_type_id(size_t type_i, size_t type_j) const;
+    std::string bond_type_id(size_t type_i, size_t type_j) const;
 
     /// Get the angle type number for the angle type i-j-k.
     ///
     /// The angle type must be in the topology used to construct this `DataTypes`
     /// instance. The index numbering starts at zero, and can be used to index
-    /// the vector backing the `sorted_set<angle_type>` returned by `angles()`.
-    size_t angle_type_id(size_t type_i, size_t type_j, size_t type_k) const;
+    /// the vector backing the `sorted_set<angle_type, std::string>` returned by `angles()`.
+    std::string angle_type_id(size_t type_i, size_t type_j, size_t type_k) const;
 
     /// Get the dihedral type number for the dihedral type i-j-k-m.
     ///
     /// The dihedral type must be in the topology used to construct this
     /// `DataTypes` instance. The index numbering starts at zero, and can be
-    /// used to index the vector backing the `sorted_set<dihedral_type>`
+    /// used to index the vector backing the `sorted_set<dihedral_type, std::string>`
     /// returned by `dihedrals()`.
-    size_t dihedral_type_id(size_t type_i, size_t type_j, size_t type_k, size_t type_m) const;
+    std::string dihedral_type_id(size_t type_i, size_t type_j, size_t type_k, size_t type_m) const;
 
     /// Get the improper type number for the improper type i-j-k-m.
     ///
     /// The improper type must be in the topology used to construct this
     /// `DataTypes` instance. The index numbering starts at zero, and can be
-    /// used to index the vector backing the `sorted_set<improper_type>`
+    /// used to index the vector backing the `sorted_set<improper_type, std::string>`
     /// returned by `impropers()`.
-    size_t improper_type_id(size_t type_i, size_t type_j, size_t type_k, size_t type_m) const;
+    std::string improper_type_id(size_t type_i, size_t type_j, size_t type_k, size_t type_m) const;
 
 private:
     sorted_set<atom_type> atoms_;
-    sorted_set<bond_type> bonds_;
-    sorted_set<angle_type> angles_;
-    sorted_set<dihedral_type> dihedrals_;
-    sorted_set<improper_type> impropers_;
+    sorted_set<std::tuple<bond_type, std::string>> bonds_;
+    sorted_set<std::tuple<angle_type, std::string>> angles_;
+    sorted_set<std::tuple<dihedral_type, std::string>> dihedrals_;
+    sorted_set<std::tuple<improper_type, std::string>> impropers_;
 };
 
 /// LAMMPS Data file format reader and writer.
@@ -156,6 +156,9 @@ private:
         ATOMS,
         MASSES,
         BONDS,
+        ANGLES,
+        DIHEDRALS,
+        IMPROPERS,
         VELOCITIES,
         IGNORED,
         NOT_A_SECTION,
@@ -180,6 +183,12 @@ private:
     void read_masses();
     /// Read the bonds section
     void read_bonds(Frame& frame);
+    /// Read the angles section
+    void read_angles(Frame& frame);
+    /// Read the dihedrals section
+    void read_dihedrals(Frame& frame);
+    /// Read the impropers section
+    void read_impropers(Frame& frame);
     /// Read the velocities section
     void read_velocities(Frame& frame);
     /// Setup masses of the frame with previously read values. This function
@@ -218,6 +227,18 @@ private:
     size_t natom_types_ = 0;
     /// Number of bonds in the file
     size_t nbonds_ = 0;
+    /// Number of bond types in the file
+    /// size_t nbond_types_ = 0;
+    /// Number of angles in the file
+    size_t nangles_ = 0;
+    /// Number of angle types in the file
+    /// size_t nangle_types_ = 0;
+    /// Number of dihedrals in the file
+    size_t ndihedrals_ = 0;
+    /// Number of dihedral types in the file
+    /// size_t ndihedral_types_ = 0;
+    /// Number of impropers in the file
+    size_t nimpropers_ = 0;
     /// Optional masses, indexed by atomic type
     std::unordered_map<std::string, double> masses_;
     /// Optional atomic names, indexed by atomic indexes

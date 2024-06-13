@@ -1,6 +1,7 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
+#include <cstddef>
 #include <cstdint>
 #include <cassert>
 #include <cmath>
@@ -240,6 +241,15 @@ void LAMMPSDataFormat::read_next(Frame& frame) {
         case BONDS:
             read_bonds(frame);
             break;
+        case ANGLES:
+            read_angles(frame);
+            break;
+        case DIHEDRALS:
+            read_dihedrals(frame);
+            break;
+        case IMPROPERS:
+            read_impropers(frame);
+            break;
         case VELOCITIES:
             read_velocities(frame);
             break;
@@ -271,6 +281,12 @@ void LAMMPSDataFormat::read_header(Frame& frame) {
             natoms_ = read_header_integer(content, "atoms");
         } else if (content.find("bonds") != std::string::npos) {
             nbonds_ = read_header_integer(content, "bonds");
+        } else if (content.find("angles") != std::string::npos) {
+            nangles_ = read_header_integer(content, "angles");
+        } else if (content.find("dihedrals") != std::string::npos) {
+            ndihedrals_ = read_header_integer(content, "dihedrals");
+        } else if (content.find("impropers") != std::string::npos) {
+            nimpropers_ = read_header_integer(content, "impropers");
         } else if (content.find("atom types") != std::string::npos) {
             natom_types_ = read_header_integer(content, "atom types");
         } else if (content.find("xlo") != std::string::npos) {
@@ -474,14 +490,110 @@ void LAMMPSDataFormat::read_bonds(Frame& frame) {
             throw format_error("bad bond specification '{}'", line);
         }
         // LAMMPS use 1-based indexing
+        auto bond_type = parse<std::string>(splitted[1]);
         auto i = parse<size_t>(splitted[2]) - 1;
         auto j = parse<size_t>(splitted[3]) - 1;
-        frame.add_bond(i, j);
+        frame.add_bond(i, j, Bond::UNKNOWN, bond_type);
         n++;
     }
 
     if (file_.eof() && n < nbonds_) {
         throw format_error("end of file found before getting all bonds");
+    }
+
+    get_next_section();
+}
+
+void LAMMPSDataFormat::read_angles(Frame& frame) {
+    assert(current_section_ == ANGLES);
+    if (nangles_ == 0) {
+        throw format_error("missing angles count in header");
+    }
+    size_t n = 0;
+    while (n < nangles_ && !file_.eof()) {
+        auto line = file_.readline();
+        split_comment(line);
+        if (line.empty()) {continue;}
+
+        auto splitted = split(line, ' ');
+        if (splitted.size() != 5) {
+            throw format_error("bad angle specification '{}'", line);
+        }
+        // LAMMPS use 1-based indexing
+        auto angle_type = parse<std::string>(splitted[1]);
+        auto i = parse<size_t>(splitted[2]) - 1;
+        auto j = parse<size_t>(splitted[3]) - 1;
+        auto k = parse<size_t>(splitted[4]) - 1;
+        frame.add_angle(i, j, k, angle_type);
+        n++;
+    }
+
+    if (file_.eof() && n < nangles_) {
+        throw format_error("end of file found before getting all angles");
+    }
+
+    get_next_section();
+}
+
+void LAMMPSDataFormat::read_dihedrals(Frame& frame) {
+    assert(current_section_ == DIHEDRALS);
+    if (ndihedrals_ == 0) {
+        throw format_error("missing dihedrals count in header");
+    }
+    size_t n = 0;
+    while (n < ndihedrals_ && !file_.eof()) {
+        auto line = file_.readline();
+        split_comment(line);
+        if (line.empty()) {continue;}
+
+        auto splitted = split(line, ' ');
+        if (splitted.size() != 6) {
+            throw format_error("bad dihedral specification '{}'", line);
+        }
+        // LAMMPS use 1-based indexing
+        auto dihedral_type = parse<std::string>(splitted[1]);
+        auto i = parse<size_t>(splitted[2]) - 1;
+        auto j = parse<size_t>(splitted[3]) - 1;
+        auto k = parse<size_t>(splitted[4]) - 1;
+        auto m = parse<size_t>(splitted[5]) - 1;
+        frame.add_dihedral(i, j, k, m, dihedral_type);
+        n++;
+    }
+
+    if (file_.eof() && n < ndihedrals_) {
+        throw format_error("end of file found before getting all dihedrals");
+    }
+
+    get_next_section();
+}
+
+void LAMMPSDataFormat::read_impropers(Frame& frame) {
+    assert(current_section_ == IMPROPERS);
+    if (nimpropers_ == 0) {
+        throw format_error("missing impropers count in header");
+    }
+    size_t n = 0;
+    while (n < nimpropers_ && !file_.eof()) {
+        auto line = file_.readline();
+        split_comment(line);
+        if (line.empty()) {continue;}
+
+        auto splitted = split(line, ' ');
+        if (splitted.size() != 6) {
+            throw format_error("bad improper specification '{}'", line);
+        }
+        // LAMMPS use 1-based indexing
+        auto improper_type = parse<std::string>(splitted[1]);
+        auto i = parse<size_t>(splitted[2]) - 1;
+        auto j = parse<size_t>(splitted[3]) - 1;
+        auto k = parse<size_t>(splitted[4]) - 1;
+        auto m = parse<size_t>(splitted[5]) - 1;
+        frame.add_improper(i, j, k, m, improper_type);
+        n++;
+    }
+
+    if (file_.eof() && n < nimpropers_) {
+        throw format_error("end of file found before getting all impropers");
     }
 
     get_next_section();
@@ -637,14 +749,14 @@ DataTypes::DataTypes(const Topology& topology) {
     for (auto& bond: topology.bonds()) {
         auto i = atom_type_id(topology[bond[0]]);
         auto j = atom_type_id(topology[bond[1]]);
-        bonds_.insert(normalize_bond_type(i, j));
+        bonds_.insert({normalize_bond_type(i, j), topology.bond_type(bond[0], bond[1])});
     }
 
     for (auto& angle: topology.angles()) {
         auto i = atom_type_id(topology[angle[0]]);
         auto j = atom_type_id(topology[angle[1]]);
         auto k = atom_type_id(topology[angle[2]]);
-        angles_.insert(normalize_angle_type(i, j, k));
+        angles_.insert({normalize_angle_type(i, j, k), topology.angle_type(angle[0], angle[1], angle[2])});
     }
 
     for (auto& dihedral: topology.dihedrals()) {
@@ -652,7 +764,7 @@ DataTypes::DataTypes(const Topology& topology) {
         auto j = atom_type_id(topology[dihedral[1]]);
         auto k = atom_type_id(topology[dihedral[2]]);
         auto m = atom_type_id(topology[dihedral[3]]);
-        dihedrals_.insert(normalize_dihedral_type(i, j, k, m));
+        dihedrals_.insert({normalize_dihedral_type(i, j, k, m), topology.dihedral_type(dihedral[0], dihedral[1], dihedral[2], dihedral[3])});
     }
 
     for (auto& improper: topology.impropers()) {
@@ -660,7 +772,7 @@ DataTypes::DataTypes(const Topology& topology) {
         auto j = atom_type_id(topology[improper[1]]);
         auto k = atom_type_id(topology[improper[2]]);
         auto m = atom_type_id(topology[improper[3]]);
-        impropers_.insert(normalize_improper_type(i, j, k, m));
+        impropers_.insert({normalize_improper_type(i, j, k, m), topology.improper_type(improper[0], improper[1], improper[2], improper[3])});
     }
 }
 
@@ -673,37 +785,57 @@ size_t DataTypes::atom_type_id(const Atom& atom) const {
     }
 }
 
-size_t DataTypes::bond_type_id(size_t type_i, size_t type_j) const {
-    auto it = bonds_.find(normalize_bond_type(type_i, type_j));
+std::string DataTypes::bond_type_id(size_t type_i, size_t type_j) const {
+    auto it = std::find_if(bonds_.begin(), bonds_.end(), [&type_i, &type_j](const std::tuple<bond_type, std::string>& pair) {
+        return std::get<0>(pair) == normalize_bond_type(type_i, type_j);
+    });
     if (it != bonds_.end()) {
-        return static_cast<size_t>(it - bonds_.begin());
+        if (std::get<1>(*it).empty()) {
+            return std::to_string(it - bonds_.begin() + 1);
+        }
+        return std::get<1>(*it);
     } else {
         throw error("invalid bond type passed to bond_type_id, this is a bug");
     }
 }
 
-size_t DataTypes::angle_type_id(size_t type_i, size_t type_j, size_t type_k) const {
-    auto it = angles_.find(normalize_angle_type(type_i, type_j, type_k));
+std::string DataTypes::angle_type_id(size_t type_i, size_t type_j, size_t type_k) const {
+    auto it = std::find_if(angles_.begin(), angles_.end(), [&type_i, &type_j, &type_k](const std::tuple<angle_type, std::string>& pair) {
+        return std::get<0>(pair) == normalize_angle_type(type_i, type_j, type_k);
+    });
     if (it != angles_.end()) {
-        return static_cast<size_t>(it - angles_.begin());
+        if (std::get<1>(*it).empty()) {
+            return std::to_string(it - angles_.begin() + 1);
+        }
+        return std::get<1>(*it);
     } else {
         throw error("invalid angle type passed to angle_type_id, this is a bug");
     }
 }
 
-size_t DataTypes::dihedral_type_id(size_t type_i, size_t type_j, size_t type_k, size_t type_m) const {
-    auto it = dihedrals_.find(normalize_dihedral_type(type_i, type_j, type_k, type_m));
+std::string DataTypes::dihedral_type_id(size_t type_i, size_t type_j, size_t type_k, size_t type_m) const {
+    auto it = std::find_if(dihedrals_.begin(), dihedrals_.end(), [&type_i, &type_j, &type_k, &type_m](const std::tuple<dihedral_type, std::string>& pair) {
+        return std::get<0>(pair) == normalize_dihedral_type(type_i, type_j, type_k, type_m);
+    });
     if (it != dihedrals_.end()) {
-        return static_cast<size_t>(it - dihedrals_.begin());
+        if (std::get<1>(*it).empty()) {
+            return std::to_string(it - dihedrals_.begin() + 1);
+        }
+        return std::get<1>(*it);
     } else {
         throw error("invalid dihedral type passed to dihedral_type_id, this is a bug");
     }
 }
 
-size_t DataTypes::improper_type_id(size_t type_i, size_t type_j, size_t type_k, size_t type_m) const {
-    auto it = impropers_.find(normalize_improper_type(type_i, type_j, type_k, type_m));
+std::string DataTypes::improper_type_id(size_t type_i, size_t type_j, size_t type_k, size_t type_m) const {
+    auto it = std::find_if(impropers_.begin(), impropers_.end(), [&type_i, &type_j, &type_k, &type_m](const std::tuple<improper_type, std::string>& pair) {
+        return std::get<0>(pair) == normalize_improper_type(type_i, type_j, type_k, type_m);
+    });
     if (it != impropers_.end()) {
-        return static_cast<size_t>(it - impropers_.begin());
+        if (std::get<1>(*it).empty()) {
+            return std::to_string(it - impropers_.begin() + 1);
+        }
+        return std::get<1>(*it);
     } else {
         throw error("invalid improper type passed to improper_type_id, this is a bug");
     }
@@ -773,9 +905,10 @@ void LAMMPSDataFormat::write_types(const DataTypes& types) {
     if (!bonds.empty()) {
         file_.print("\n# Bond Coeffs\n");
         for (size_t i=0; i<bonds.size(); i++) {
+            auto& bond_index = std::get<0>(bonds[i]);
             file_.print("# {} {}-{}\n", i + 1,
-                atoms[std::get<0>(bonds[i])].first,
-                atoms[std::get<1>(bonds[i])].first
+                atoms[std::get<0>(bond_index)].first,
+                atoms[std::get<1>(bond_index)].first
             );
         }
     }
@@ -784,10 +917,11 @@ void LAMMPSDataFormat::write_types(const DataTypes& types) {
     if (!angles.empty()) {
         file_.print("\n# Angle Coeffs\n");
         for (size_t i=0; i<angles.size(); i++) {
+            auto& angle_index = std::get<0>(angles[i]);
             file_.print("# {} {}-{}-{}\n", i + 1,
-                atoms[std::get<0>(angles[i])].first,
-                atoms[std::get<1>(angles[i])].first,
-                atoms[std::get<2>(angles[i])].first
+                atoms[std::get<0>(angle_index)].first,
+                atoms[std::get<1>(angle_index)].first,
+                atoms[std::get<2>(angle_index)].first
             );
         }
     }
@@ -796,11 +930,12 @@ void LAMMPSDataFormat::write_types(const DataTypes& types) {
     if (!dihedrals.empty()) {
         file_.print("\n# Dihedrals Coeffs\n");
         for (size_t i=0; i<dihedrals.size(); i++) {
+            auto& dihedral_index = std::get<0>(dihedrals[i]);
             file_.print("# {} {}-{}-{}-{}\n", i + 1,
-                atoms[std::get<0>(dihedrals[i])].first,
-                atoms[std::get<1>(dihedrals[i])].first,
-                atoms[std::get<2>(dihedrals[i])].first,
-                atoms[std::get<3>(dihedrals[i])].first
+                atoms[std::get<0>(dihedral_index)].first,
+                atoms[std::get<1>(dihedral_index)].first,
+                atoms[std::get<2>(dihedral_index)].first,
+                atoms[std::get<3>(dihedral_index)].first
             );
         }
     }
@@ -809,11 +944,12 @@ void LAMMPSDataFormat::write_types(const DataTypes& types) {
     if (!impropers.empty()) {
         file_.print("\n# Impropers Coeffs\n");
         for (size_t i=0; i<impropers.size(); i++) {
+            auto& improper_index = std::get<0>(impropers[i]);
             file_.print("# {} {}-{}-{}-{}\n", i + 1,
-                atoms[std::get<0>(impropers[i])].first,
-                atoms[std::get<1>(impropers[i])].first,
-                atoms[std::get<2>(impropers[i])].first,
-                atoms[std::get<3>(impropers[i])].first
+                atoms[std::get<0>(improper_index)].first,
+                atoms[std::get<1>(improper_index)].first,
+                atoms[std::get<2>(improper_index)].first,
+                atoms[std::get<3>(improper_index)].first
             );
         }
     }
@@ -862,9 +998,13 @@ void LAMMPSDataFormat::write_bonds(const DataTypes& types, const Topology& topol
     for (auto bond: topology.bonds()) {
         auto type_i = types.atom_type_id(topology[bond[0]]);
         auto type_j = types.atom_type_id(topology[bond[1]]);
-        auto bond_type_id = types.bond_type_id(type_i, type_j);
+        auto bond_type_str = types.bond_type_id(type_i, type_j);
+        size_t bond_type_id = parse<size_t>(bond_type_str);
+        // if (bond_type_str.empty()) {
+        //     bond_type_id += 1;
+        // }
         file_.print("{} {} {} {}\n",
-            bond_id, bond_type_id + 1, bond[0] + 1, bond[1] + 1
+            bond_id, bond_type_id, bond[0] + 1, bond[1] + 1
         );
         bond_id++;
     }
@@ -879,9 +1019,14 @@ void LAMMPSDataFormat::write_angles(const DataTypes& types, const Topology& topo
         auto type_i = types.atom_type_id(topology[angle[0]]);
         auto type_j = types.atom_type_id(topology[angle[1]]);
         auto type_k = types.atom_type_id(topology[angle[2]]);
-        auto angle_type_id = types.angle_type_id(type_i, type_j, type_k);
+        auto angle_type_str = types.angle_type_id(type_i, type_j, type_k);
+        size_t angle_type_id = parse<size_t>(angle_type_str);
+        // if (angle_type_str.empty()) {
+        //     angle_type_id += 1;
+        // }
         file_.print("{} {} {} {} {}\n",
-            angle_id, angle_type_id + 1, angle[0] + 1, angle[1] + 1, angle[2] + 1
+            angle_id, angle_type_id,
+            angle[0] + 1, angle[1] + 1, angle[2] + 1
         );
         angle_id++;
     }
@@ -897,9 +1042,13 @@ void LAMMPSDataFormat::write_dihedrals(const DataTypes& types, const Topology& t
         auto type_j = types.atom_type_id(topology[dihedral[1]]);
         auto type_k = types.atom_type_id(topology[dihedral[2]]);
         auto type_m = types.atom_type_id(topology[dihedral[3]]);
-        auto dihedral_type_id = types.dihedral_type_id(type_i, type_j, type_k, type_m);
+        auto dihedral_type_str = types.dihedral_type_id(type_i, type_j, type_k, type_m);
+        size_t dihedral_type_id = parse<size_t>(dihedral_type_str);
+        // if (dihedral_type_str.empty()) {
+        //     dihedral_type_id += 1;
+        // }
         file_.print("{} {} {} {} {} {}\n",
-            dihedral_id, dihedral_type_id + 1,
+            dihedral_id, dihedral_type_id,
             dihedral[0] + 1, dihedral[1] + 1, dihedral[2] + 1, dihedral[3] + 1
         );
         dihedral_id++;
@@ -916,9 +1065,13 @@ void LAMMPSDataFormat::write_impropers(const DataTypes& types, const Topology& t
         auto type_j = types.atom_type_id(topology[improper[1]]);
         auto type_k = types.atom_type_id(topology[improper[2]]);
         auto type_m = types.atom_type_id(topology[improper[3]]);
-        auto improper_type_id = types.improper_type_id(type_i, type_j, type_k, type_m);
+        auto improper_type_str = types.improper_type_id(type_i, type_j, type_k, type_m);
+        size_t improper_type_id = parse<size_t>(improper_type_str);
+        // if (improper_type_str.empty()) {
+        //     improper_type_id += 1;
+        // }
         file_.print("{} {} {} {} {} {}\n",
-            improper_id, improper_type_id + 1,
+            improper_id, improper_type_id,
             improper[0] + 1, improper[1] + 1, improper[2] + 1, improper[3] + 1
         );
         improper_id++;

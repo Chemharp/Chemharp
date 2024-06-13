@@ -4,6 +4,7 @@
 #ifndef CHEMFILES_TOPOLOGY_HPP
 #define CHEMFILES_TOPOLOGY_HPP
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -113,9 +114,54 @@ public:
     /// @param atom_i the index of the first atom in the bond
     /// @param atom_j the index of the second atom in the bond
     /// @param bond_order the bond order for the bond added
+    /// @param bond_type the bond type for the bond added
     /// @throws OutOfBounds if `atom_i` or `atom_j` are greater than `size()`
     /// @throws Error if `atom_i == atom_j`, as this is an invalid bond
-    void add_bond(size_t atom_i, size_t atom_j, Bond::BondOrder bond_order = Bond::UNKNOWN);
+    void add_bond(size_t atom_i, size_t atom_j, Bond::BondOrder bond_order = Bond::UNKNOWN, std::string bond_type = "");
+
+    /// Add an angle in the system, between the atoms at index `atom_i`,
+    /// `atom_j` and `atom_k`
+    ///
+    /// @example{topology/add_angle.cpp}
+    ///
+    /// @param atom_i the index of the first atom in the angle
+    /// @param atom_j the index of the second atom in the angle
+    /// @param atom_k the index of the third atom in the angle
+    /// @param angle_type the angle type for the angle added
+    /// @throws OutOfBounds if any index is greater than `size()`
+    /// @throws Error if any atom index is duplicate, 
+    ///         as this is an invalid angle
+    void add_angle(size_t atom_i, size_t atom_j, size_t atom_k, std::string angle_type = "");
+
+    /// Add a dihedral in the system, between the atoms at index `atom_i`,
+    /// `atom_j` and `atom_k`
+    ///
+    /// @example{topology/add_dihedral.cpp}
+    ///
+    /// @param atom_i the index of the first atom in the dihedral
+    /// @param atom_j the index of the second atom in the dihedral
+    /// @param atom_k the index of the third atom in the dihedral
+    /// @param atom_l the index of the forth atom in the dihedral
+    /// @param dihedral_type the dihedral type for the dihedral added
+    /// @throws OutOfBounds if any index is greater than `size()`
+    /// @throws Error if any atom index is duplicate, 
+    ///         as this is an invalid dihedral
+    void add_dihedral(size_t atom_i, size_t atom_j, size_t atom_k, size_t atom_l, std::string dihedral_type = "");
+
+    /// Add an improper in the system, between the atoms at index `atom_i`,
+    /// `atom_j` and `atom_k`
+    ///
+    /// @example{topology/add_improper.cpp}
+    ///
+    /// @param atom_i the index of the first atom in the improper
+    /// @param atom_j the index of the second atom in the improper
+    /// @param atom_k the index of the third atom in the improper
+    /// @param atom_l the index of the forth atom in the improper
+    /// @param improper_type the improper type for the improper added
+    /// @throws OutOfBounds if any index is greater than `size()`
+    /// @throws Error if any atom index is duplicate, 
+    ///         as this is an invalid improper
+    void add_improper(size_t atom_i, size_t atom_j, size_t atom_k, size_t atom_l, std::string improper_type = "");
 
     /// Remove a bond in the system, between the atoms at index `atom_i` and
     /// `atom_j`.
@@ -140,6 +186,57 @@ public:
     /// @throws OutOfBounds if `atom_i` or `atom_j` are greater than `size()`
     /// @throws Error if no bond between `atom_i` and `atom_j` exists.
     Bond::BondOrder bond_order(size_t atom_i, size_t atom_j) const;
+
+    /// Get the bond type for the given bond
+    ///
+    /// If the bond does not exist, this will thrown an Error.
+    ///
+    /// @example{topology/bond_type.cpp}
+    ///
+    /// @param atom_i the index of the first atom in the bond
+    /// @param atom_j the index of the second atom in the bond
+    /// @throws OutOfBounds if `atom_i` or `atom_j` are greater than `size()`
+    /// @throws Error if no bond between `atom_i` and `atom_j` exists.
+    const std::string& bond_type(size_t atom_i, size_t atom_j) const;
+
+    /// Get the angle type for the given angle
+    ///
+    /// If the angle does not exist, this will thrown an Error.
+    ///
+    /// @example{topology/angle_type.cpp}
+    ///
+    /// @param atom_i the index of the first atom in the angle
+    /// @param atom_j the index of the second atom in the angle
+    /// @param atom_k the index of the third atom in the angle
+    /// @throws OutOfBounds if any index is greater than `size()`
+    /// @throws Error if no angle exists.
+    const std::string& angle_type(size_t atom_i, size_t atom_j, size_t atom_k) const;
+
+    /// Get the dihedral type for the given dihedral
+    ///
+    /// If the dihedral does not exist, this will thrown an Error.
+    ///
+    /// @example{topology/dihedral_type.cpp}
+    ///
+    /// @param atom_i the index of the first atom in the dihedral
+    /// @param atom_j the index of the second atom in the dihedral
+    /// @param atom_k the index of the third atom in the dihedral
+    /// @throws OutOfBounds if any index is greater than `size()`
+    /// @throws Error if no dihedral exists.
+    const std::string& dihedral_type(size_t atom_i, size_t atom_j, size_t atom_k, size_t atom_l) const;
+
+    /// Get the improper type for the given improper
+    ///
+    /// If the improper does not exist, this will thrown an Error.
+    ///
+    /// @example{topology/angle_type.cpp}
+    ///
+    /// @param atom_i the index of the first atom in the improper
+    /// @param atom_j the index of the second atom in the improper
+    /// @param atom_k the index of the third atom in the improper
+    /// @throws OutOfBounds if any index is greater than `size()`
+    /// @throws Error if no improper exists.
+    const std::string& improper_type(size_t atom_i, size_t atom_j, size_t atom_k, size_t atom_l) const;
 
     /// Get the number of atoms in the topology
     ///
