@@ -4,9 +4,13 @@
 #ifndef CHEMFILES_FORMAT_SMI_HPP
 #define CHEMFILES_FORMAT_SMI_HPP
 
+#include <cstddef>
 #include <cstdint>
+
 #include <map>
 #include <stack>
+#include <string_view>
+#include <utility>
 #include <vector>
 #include <string>
 #include <memory>
@@ -30,7 +34,7 @@ class FormatMetadata;
 /// SMI/OpenSMILES file format reader and writer.
 class SMIFormat final: public TextFormat {
 public:
-    SMIFormat(const std::string& path, File::Mode mode, File::Compression compression):
+    SMIFormat(std::string path, File::Mode mode, File::Compression compression):
         TextFormat(std::move(path), mode, compression) {}
 
     SMIFormat(std::shared_ptr<MemoryBuffer> memory, File::Mode mode, File::Compression compression) :

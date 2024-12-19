@@ -5,6 +5,7 @@
 #define CHEMFILES_MUTEX_HPP
 
 #include <mutex>
+#include <utility>
 
 namespace chemfiles {
 

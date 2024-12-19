@@ -6,7 +6,6 @@
 
 #include <string>
 #include <vector>
-#include <functional>
 
 #include "chemfiles/config.h"
 #include "chemfiles/capi/types.h"

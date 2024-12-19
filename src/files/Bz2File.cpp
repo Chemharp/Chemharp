@@ -85,11 +85,15 @@ Bz2File::Bz2File(const std::string& path, File::Mode mode): TextFileImpl(path), 
 
 Bz2File::~Bz2File() {
     if (mode_ == File::WRITE) {
-        compress_and_write(BZ_FINISH);
+        try {
+            compress_and_write(BZ_FINISH);
+        } catch (...) {
+            // not much we can do here
+        }
     }
 
     stream_end_(&stream_);
-    if (file_) {
+    if (file_ != nullptr) {
         std::fclose(file_);
     }
 }
@@ -100,11 +104,11 @@ size_t Bz2File::read(char* data, size_t count) {
 
     while (stream_.avail_out != 0) {
         // read more compressed data from the file
-        if (stream_.avail_in == 0 && !std::feof(file_)) {
+        if (stream_.avail_in == 0 && (std::feof(file_) == 0)) {
             stream_.next_in = buffer_.data();
             stream_.avail_in = checked_cast(std::fread(buffer_.data(), 1, buffer_.size(), file_));
 
-            if (std::ferror(file_)) {
+            if (std::ferror(file_) != 0) {
                 throw file_error("IO error while reading bzip2 file");
             }
         }

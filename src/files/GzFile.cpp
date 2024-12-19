@@ -56,7 +56,7 @@ GzFile::~GzFile() {
 
 size_t GzFile::read(char* data, size_t count) {
     auto read = gzread(file_, data, checked_cast(count));
-    auto error = check_error();
+    const auto* error = check_error();
     if (read == -1 || error != nullptr) {
         throw file_error("error while reading gziped file: {}", error);
     }
@@ -65,7 +65,7 @@ size_t GzFile::read(char* data, size_t count) {
 
 void GzFile::write(const char* data, size_t count) {
     auto actual = gzwrite(file_, data, checked_cast(count));
-    auto error = check_error();
+    const auto* error = check_error();
     if (actual == 0 || error != nullptr) {
         throw file_error("error while writting to gziped file: {}", error);
     }
@@ -76,7 +76,7 @@ void GzFile::write(const char* data, size_t count) {
 
 const char* GzFile::check_error() const {
     int status = Z_OK;
-    auto message = gzerror(file_, &status);
+    const auto* message = gzerror(file_, &status);
     return status == Z_OK ? nullptr : message;
 }
 
@@ -91,7 +91,7 @@ void GzFile::seek(uint64_t position) {
     );
     auto status = gzseek64(file_, static_cast<z_off64_t>(position), SEEK_SET);
     if (status == -1) {
-        auto message = check_error();
+        const auto* message = check_error();
         throw file_error("error while seeking gziped file: {}", message);
     }
 }

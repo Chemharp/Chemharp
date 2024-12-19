@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <utility>
 
 #include "chemfiles/File.hpp"
 #include "chemfiles/Format.hpp"

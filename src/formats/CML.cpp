@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 #include <iterator>
 #include <string_view>
@@ -13,6 +14,7 @@
 #include <pugixml.hpp>
 
 #include "chemfiles/types.hpp"
+#include "chemfiles/unreachable.hpp"
 #include "chemfiles/utils.hpp"
 #include "chemfiles/parse.hpp"
 #include "chemfiles/warnings.hpp"
@@ -94,7 +96,7 @@ void CMLFormat::init_() {
     }
 
     root_ = document_.child("cml");
-    if (root_) {
+    if (root_ != nullptr) {
         auto molecules = root_.children("molecule");
         current_ = molecules.begin();
         if (current_ == molecules.end()) {
@@ -105,7 +107,7 @@ void CMLFormat::init_() {
 
     // Not technically standard to have multiple molecule nodes as root nodes,
     // but some tools do this and we should support it
-    if (document_.child("molecule")) {
+    if (document_.child("molecule") != nullptr) {
         auto molecules = document_.children("molecule");
         current_ = molecules.begin();
         root_ = document_;
@@ -173,7 +175,7 @@ static UnitCell read_cell(const pugi::xml_node& crystal) {
     Vector3D angles = {90, 90, 90};
     for (const auto& scalar: crystal.children("scalar")) {
         auto title = scalar.attribute("title");
-        if (title) {
+        if (title != nullptr) {
             auto name = std::string(title.value());
             if (name == "a") {
                 lengths[0] = scalar.text().as_double();
@@ -200,10 +202,20 @@ void CMLFormat::read_atoms(Frame& frame, const pugi::xml_node& atoms) {
 
     // TODO: Read string vector versions instead of just the nodes
     for (const auto& atom: atoms.children("atom")) {
-        double x2, y2, x3, y3, z3, xf, yf, zf;
-        x2 = y2 = x3 = y3 = z3 = xf = yf = zf = 0.0;
-        std::string id, element, atom_title;
-        double formal_charge = 0.0, isotope = 0.0, hydrogen_count = 0.0;
+        double x2 = 0;
+        double y2 = 0;
+        double x3 = 0;
+        double y3 = 0;
+        double z3 = 0;
+        double xf = 0;
+        double yf = 0;
+        double zf = 0;
+        std::string id;
+        std::string element;
+        std::string atom_title;
+        double formal_charge = 0.0;
+        double isotope = 0.0;
+        double hydrogen_count = 0.0;
         for (const auto& attribute: atom.attributes()) {
             auto name = std::string(attribute.name());
             if (name == "id") {
@@ -331,7 +343,7 @@ void CMLFormat::read_bonds(Frame& frame, const pugi::xml_node& bonds) {
         }
 
         auto bond_order = Bond::UNKNOWN;
-        if (order) {
+        if (order != nullptr) {
             std::string order_str = order.as_string();
             if (!order_str.empty()) {
                 switch (order_str[0]) {
@@ -383,18 +395,18 @@ void CMLFormat::read(Frame& frame) {
     }
 
     const auto& frame_name = current.child("name");
-    if (frame_name) {
+    if (frame_name != nullptr) {
         frame.set("name", frame_name.text().as_string());
     }
 
     const auto& crystal = current.child("crystal");
-    if (crystal) {
+    if (crystal != nullptr) {
         frame.set_cell(read_cell(crystal));
     }
 
     // Frame level properties
     const auto& properties = current.child("propertyList");
-    if (properties) {
+    if (properties != nullptr) {
         for (const auto& property: properties.children("property")) {
             const auto& title = property.attribute("title");
             if (!title) {
@@ -402,7 +414,7 @@ void CMLFormat::read(Frame& frame) {
                 continue;
             }
 
-            auto title_str = title.as_string();
+            const auto* title_str = title.as_string();
             const auto& scalar = property.child("scalar");
             if (!scalar) {
                 warning("CML reader", "{} has no scalar associated with it", title_str);
@@ -413,15 +425,15 @@ void CMLFormat::read(Frame& frame) {
         }
     }
 
-    const auto& atoms = current.child("atomArray");
-    if (atoms) {
+    auto atoms = current.child("atomArray");
+    if (atoms != nullptr) {
         read_atoms(frame, atoms);
     } else {
         warning("CML reader", "missing atomArray node");
     }
 
-    const auto& bonds = current.child("bondArray");
-    if (bonds) {
+    auto bonds = current.child("bondArray");
+    if (bonds != nullptr) {
         read_bonds(frame, bonds);
     }
 
@@ -456,6 +468,8 @@ static void write_property_(const Property& p, pugi::xml_node& node) {
                        std::to_string(v[1]) + " " +
                        std::to_string(v[2])).c_str();
         break;
+    default:
+        unreachable();
     }
 }
 
@@ -522,10 +536,10 @@ void CMLFormat::write(const Frame& frame) {
     }
 
     // Loop through and add properties to the propertyList node as required
-    auto& properties = frame.properties();
-    if (properties.size()) {
+    const auto& properties = frame.properties();
+    if (properties.size() != 0) {
         auto prop_list = mol.append_child("propertyList");
-        for (auto& prop : properties) {
+        for (const auto& prop: properties) {
 
             // This properties are special, don't write them as scalars
             if (prop.first == "name" || prop.first == "title") {
@@ -543,7 +557,7 @@ void CMLFormat::write(const Frame& frame) {
     auto velocities = frame.velocities();
     auto atom_array = mol.append_child("atomArray");
     for (size_t i = 0; i < frame.size(); ++i) {
-        auto& atom = frame[i];
+        const auto& atom = frame[i];
         auto atom_node = atom_array.append_child("atom");
 
         // Add a new id for the atom which is 1-based
@@ -575,7 +589,7 @@ void CMLFormat::write(const Frame& frame) {
         }
 
         // Now write the position attributes
-        auto& position = frame.positions()[i];
+        const auto& position = frame.positions()[i];
         atom_node.append_attribute("x3") = position[0];
         atom_node.append_attribute("y3") = position[1];
         atom_node.append_attribute("z3") = position[2];
@@ -591,11 +605,11 @@ void CMLFormat::write(const Frame& frame) {
 
         }
 
-        auto& atom_properties = atom.properties();
+        const auto& atom_properties = atom.properties();
         if (!atom_properties) {
             continue;
         }
-        for (auto& prop : *atom_properties) {
+        for (const auto& prop : *atom_properties) {
             // special properties which are already written as attributes
             // charge and isotope are not stored as properties, so no need to check
             if (prop.first == "hydrogen_count" || prop.first == "title") {
@@ -607,13 +621,13 @@ void CMLFormat::write(const Frame& frame) {
         }
     }
 
-    auto& bonds = frame.topology().bonds();
+    const auto& bonds = frame.topology().bonds();
     if (bonds.size() == 0) { // don't bother if there's no bonds
         return;
     }
 
     auto bond_array = mol.append_child("bondArray");
-    auto& bond_orders = frame.topology().bond_orders();
+    const auto& bond_orders = frame.topology().bond_orders();
 
     for (size_t i = 0; i < bonds.size(); ++i) {
         std::string refs2 = "a" + std::to_string(bonds[i][0] + 1) +

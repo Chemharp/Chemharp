@@ -4,9 +4,13 @@
 #ifndef CHEMFILES_FORMAT_PDB_HPP
 #define CHEMFILES_FORMAT_PDB_HPP
 
+#include <cstddef>
 #include <cstdint>
+
 #include <map>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 #include <memory>
 
@@ -69,8 +73,8 @@ private:
     void read_ATOM(Frame& frame, std::string_view line, bool is_hetatm);
     // Read secondary structure records. All push secinfo_ vector if line is valid
     void read_HELIX(std::string_view line);
-    // reads SHEET and TURN records. i1 and i2 are the indicies of the chain ids
-    void read_secondary(std::string_view line, size_t i1, size_t i2, std::string_view record);
+    // reads SHEET and TURN records. i_start and i_end are the indicies of the chain ids
+    void read_secondary(std::string_view line, size_t i_start, size_t i_end, std::string_view record);
     // Read CONECT record
     void read_CONECT(Frame& frame, std::string_view line);
     // Runs when a chain is terminated to update residue information

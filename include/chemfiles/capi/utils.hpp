@@ -4,14 +4,14 @@
 #ifndef CHEMFILES_CAPI_UTILS_H
 #define CHEMFILES_CAPI_UTILS_H
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
-#include <exception>
 
 #include <fmt/format.h>
 
 #include "chemfiles/capi/types.h"
-#include "chemfiles/warnings.hpp"
+#include "chemfiles/warnings.hpp"  // IWYU pragma: keep
 #include "chemfiles/types.hpp"
 
 #include "chemfiles/Error.hpp"

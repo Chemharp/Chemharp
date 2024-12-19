@@ -4,9 +4,12 @@
 #ifndef CHEMFILES_RESIDUE_HPP
 #define CHEMFILES_RESIDUE_HPP
 
+#include <cstddef>
 #include <cstdint>
+
 #include <string>
 #include <algorithm>
+#include <utility>
 
 #include "chemfiles/exports.h"
 #include "chemfiles/sorted_set.hpp"

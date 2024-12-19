@@ -4,6 +4,7 @@
 #ifndef CHEMFILES_PARSE_HPP
 #define CHEMFILES_PARSE_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <limits>
@@ -74,8 +75,8 @@ namespace detail {
         /// Get the next non-whitespace value. If all values have been read,
         /// this returns an empty string.
         std::string_view next() {
-            auto start = input_.begin();
-            auto end = input_.end();
+            auto start = input_.begin();  // NOLINT(readability-qualified-auto)
+            auto end = input_.end();  // NOLINT(readability-qualified-auto)
 
             // skip whitespace
             while (start != end && is_ascii_whitespace(*start)) {
@@ -84,7 +85,7 @@ namespace detail {
             input_.remove_prefix(static_cast<size_t>(start - input_.begin()));
 
             // Find next whitespace
-            auto stop = start;
+            auto stop = start;  // NOLINT(readability-qualified-auto)
             while (stop != end && !is_ascii_whitespace(*stop)) {
                 stop++;
             }

@@ -13,7 +13,6 @@
 #include "chemfiles/capi/trajectory.h"
 
 #include "chemfiles/Error.hpp"
-#include "chemfiles/Frame.hpp"
 #include "chemfiles/Trajectory.hpp"
 #include "chemfiles/external/span.hpp"
 #include "chemfiles/external/optional.hpp"

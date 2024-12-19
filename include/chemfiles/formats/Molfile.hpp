@@ -4,10 +4,7 @@
 #ifndef CHEMFILES_FORMAT_MOLFILE_HPP
 #define CHEMFILES_FORMAT_MOLFILE_HPP
 
-extern "C" {
-    #include "vmdplugin.h"
-    #include "molfile_plugin.h"
-}
+#include <cstddef>
 
 #include <string>
 #include <vector>
@@ -17,6 +14,11 @@ extern "C" {
 #include "chemfiles/Format.hpp"
 #include "chemfiles/Topology.hpp"   // IWYU pragma: keep
 #include "chemfiles/external/optional.hpp"
+
+extern "C" {
+    #include "vmdplugin.h"
+    #include "molfile_plugin.h"
+}
 
 namespace chemfiles {
 class FormatMetadata;

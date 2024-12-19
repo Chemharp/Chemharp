@@ -2,6 +2,7 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cassert>
 
@@ -99,7 +100,9 @@ void GROFormat::read_next(Frame& frame) {
         auto y = parse<double>(line.substr(28, 8)) * 10;
         auto z = parse<double>(line.substr(36, 8)) * 10;
 
-        double vx = 0, vy = 0, vz=0;
+        double vx = 0;
+        double vy = 0;
+        double vz = 0;
         if (line.length() >= 68) {
             vx = parse<double>(line.substr(44, 8)) * 10;
             vy = parse<double>(line.substr(52, 8)) * 10;
@@ -188,7 +191,7 @@ void GROFormat::write_next(const Frame& frame) {
         }
     }
 
-    auto& positions = frame.positions();
+    const auto& positions = frame.positions();
     for (size_t i = 0; i < frame.size(); i++) {
         std::string resname = "XXXXX";
         std::string resid = "-1";

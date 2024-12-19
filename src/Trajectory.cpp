@@ -2,20 +2,21 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cassert>
+#include <cstddef>
+
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "chemfiles/Trajectory.hpp"
 
-#include "chemfiles/Atom.hpp"
 #include "chemfiles/File.hpp"
 #include "chemfiles/Format.hpp"
 #include "chemfiles/Frame.hpp"
 #include "chemfiles/UnitCell.hpp"
 #include "chemfiles/Topology.hpp"
 #include "chemfiles/FormatFactory.hpp"
-#include "chemfiles/FormatMetadata.hpp"
 #include "chemfiles/files/MemoryBuffer.hpp"
 
 #include "chemfiles/misc.hpp"
@@ -30,7 +31,7 @@ using namespace chemfiles;
 
 struct file_open_info {
     static file_open_info parse(const std::string& path, std::string format);
-    std::string format = "";
+    std::string format;
     File::Compression compression = File::DEFAULT;
 };
 
@@ -129,8 +130,8 @@ Trajectory::Trajectory(char mode, std::unique_ptr<Format> format, std::shared_pt
 }
 
 Trajectory::~Trajectory() = default;
-Trajectory::Trajectory(Trajectory&&) = default;
-Trajectory& Trajectory::operator=(Trajectory&&) = default;
+Trajectory::Trajectory(Trajectory&&) noexcept = default;
+Trajectory& Trajectory::operator=(Trajectory&&) noexcept = default;
 
 void Trajectory::pre_read(size_t step) {
     if (step >= nsteps_) {
@@ -212,7 +213,7 @@ Frame Trajectory::read_step(const size_t step) {
 
 void Trajectory::write(const Frame& frame) {
     check_opened();
-    if (!(mode_ == File::WRITE || mode_ == File::APPEND)) {
+    if (mode_ != File::WRITE && mode_ != File::APPEND) {
         throw file_error(
             "the file at '{}' was not opened in write or append mode", path_
         );

@@ -4,10 +4,16 @@
 #ifndef CHEMFILES_FORMAT_DCD_HPP
 #define CHEMFILES_FORMAT_DCD_HPP
 
+#include <cstddef>
+#include <cstdint>
+
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "chemfiles/File.hpp"
 #include "chemfiles/Format.hpp"
+#include "chemfiles/types.hpp"
 
 #include "chemfiles/files/BinaryFile.hpp"
 
@@ -48,13 +54,13 @@ class FormatMetadata;
 /// When writing, this format uses a native endianess file, always outputs the
 /// unit cell (infinite unit cells being represented with 0), and uses a 3D
 /// format without any fixed atoms.
-class DCDFormat: public Format {
+class DCDFormat final: public Format {
 public:
     DCDFormat(std::string path, File::Mode mode, File::Compression compression);
 
-    size_t nsteps() override final;
-    void read(Frame& frame) override final;
-    void read_step(size_t step, Frame& frame) override final;
+    size_t nsteps() override;
+    void read(Frame& frame) override;
+    void read_step(size_t step, Frame& frame) override;
     void write(const Frame& frame) override;
 
 private:

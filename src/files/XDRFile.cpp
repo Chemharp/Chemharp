@@ -117,7 +117,7 @@ static uint32_t sizeofint(uint32_t size) {
  * which is the exact number of bits, and them we dont need to call
  * this routine).
  */
-static uint32_t sizeofints(uint32_t num_of_ints, uint32_t sizes[]) {
+static uint32_t sizeofints(uint32_t num_of_ints, const uint32_t sizes[]) {
     uint32_t num_of_bytes = 1;
     uint8_t bytes[32];
     bytes[0] = 1;
@@ -301,8 +301,13 @@ template <> class FastTypes<uint64_t> {
 };
 
 template <typename T>
-static void unpack_from_int(const std::vector<char>& buf, DecodeState& state, uint32_t num_of_bits,
-                            uint32_t sizes[3], span<int32_t> nums) {
+static void unpack_from_int(
+    const std::vector<char>& buf,
+    DecodeState& state,
+    uint32_t num_of_bits,
+    const uint32_t sizes[3],
+    span<int32_t> nums
+) {
     T v = 0;
     size_t num_of_bytes = 0;
     while (num_of_bits >= 8) {
@@ -318,13 +323,13 @@ static void unpack_from_int(const std::vector<char>& buf, DecodeState& state, ui
     using FastType = typename FastTypes<T>::Full;
     using FastTypeHalf = typename FastTypes<T>::Half;
 
-    const FastType sz = static_cast<FastType>(sizes[2]);
-    const FastTypeHalf sy = static_cast<FastTypeHalf>(sizes[1]);
-    const FastType szy = sz * sy;
-    const FastTypeHalf x1 = v / szy;
-    const FastType q1 = v - x1 * szy;
-    const FastTypeHalf y1 = q1 / sz;
-    const FastTypeHalf z1 = q1 - y1 * sz;
+    auto sz = static_cast<FastType>(sizes[2]);
+    auto sy = static_cast<FastTypeHalf>(sizes[1]);
+    FastType szy = sz * sy;
+    auto x1 = static_cast<FastTypeHalf>(v / szy);
+    FastType q1 = v - x1 * szy;
+    auto y1 = static_cast<FastTypeHalf>(q1 / sz);
+    auto z1 = static_cast<FastTypeHalf>(q1 - y1 * sz);
 
     nums[0] = static_cast<int32_t>(x1);
     nums[1] = static_cast<int32_t>(y1);
@@ -433,7 +438,8 @@ float XDRFile::read_gmx_compressed_floats(std::vector<float>& data) {
         throw file_error("internal overflow compressing XTC coordinates");
     }
 
-    uint32_t sizeint[3], bitsizeint[3];
+    uint32_t sizeint[3];
+    uint32_t bitsizeint[3];
     const uint32_t bitsize = calc_sizeint(minint, maxint, sizeint, bitsizeint);
 
     size_t tmpidx = smallidx - 1;
@@ -619,7 +625,8 @@ void XDRFile::write_gmx_compressed_floats(const std::vector<float>& data, float 
     }
     write_single_u32(smallidx);
 
-    uint32_t sizeint[3], bitsizeint[3];
+    uint32_t sizeint[3];
+    uint32_t bitsizeint[3];
     const uint32_t bitsize = calc_sizeint(minint, maxint, sizeint, bitsizeint);
 
     size_t tmpidx = smallidx + 8;

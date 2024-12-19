@@ -75,7 +75,7 @@ void PlainFile::seek(uint64_t position) {
     );
     auto status = fseek64(file_, static_cast<off64_t>(position), SEEK_SET);
     if (status != 0) {
-        auto message = std::strerror(errno);
+        auto* message = std::strerror(errno);
         throw file_error("error while seeking file: {}", message);
     }
 }

@@ -1,9 +1,12 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
+#include <cstddef>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 #include <algorithm>
 #include <functional>
@@ -117,11 +120,11 @@ void FormatFactory::register_format(const FormatMetadata& metadata, format_creat
     }
 
     // actually register the format
-    formats.push_back({metadata, creator, memory_stream});
+    formats.push_back({metadata, std::move(creator), std::move(memory_stream)});
 }
 
 void FormatFactory::register_format(const FormatMetadata& metadata, format_creator_t creator) {
-    register_format(metadata, creator,
+    register_format(metadata, std::move(creator),
         [&metadata](std::shared_ptr<MemoryBuffer>, File::Mode, File::Compression) -> std::unique_ptr<Format> {
             throw format_error("in-memory IO is not supported for the '{}' format", metadata.name);
         }
@@ -197,9 +200,9 @@ unsigned edit_distance(std::string_view first, std::string_view second) {
 
 std::string suggest_names(const std::vector<RegisteredFormat>& formats, std::string_view name) {
     auto suggestions = std::vector<std::string>();
-    for (auto& other : formats) {
+    for (const auto& other : formats) {
         if (edit_distance(name, other.metadata.name) < 4) {
-            suggestions.push_back(other.metadata.name);
+            suggestions.emplace_back(other.metadata.name);
         }
     }
 
@@ -233,7 +236,7 @@ size_t find_by_name(const std::vector<RegisteredFormat>& formats, std::string_vi
 
 size_t find_by_extension(const std::vector<RegisteredFormat>& formats, std::string_view extension) {
     for (size_t i=0; i<formats.size(); i++) {
-        auto& format_extension = formats[i].metadata.extension;
+        const auto& format_extension = formats[i].metadata.extension;
         if (format_extension && *format_extension == extension) {
             return i;
         }

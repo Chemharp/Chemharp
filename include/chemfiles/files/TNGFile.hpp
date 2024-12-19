@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include <tng/tng_io_fwd.h>
 #include <tng/tng_io.h>
 
 #include "chemfiles/File.hpp"

@@ -3,8 +3,11 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+
 #include <string>
+#include <utility>
 #include <vector>
 #include <exception>
 #include <string_view>
@@ -94,8 +97,9 @@ std::string Token::as_str() const {
         } else {
             return std::to_string(number());
         }
+    default:
+        unreachable();
     }
-    unreachable();
 }
 
 std::vector<Token> Tokenizer::tokenize() {

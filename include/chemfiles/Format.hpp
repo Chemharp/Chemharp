@@ -4,6 +4,7 @@
 #ifndef CHEMFILES_FORMAT_HPP
 #define CHEMFILES_FORMAT_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>

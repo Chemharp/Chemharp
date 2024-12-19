@@ -2,6 +2,7 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 #include <string>
@@ -20,8 +21,8 @@ template <> int64_t chemfiles::parse(std::string_view input) {
         throw error("can not parse an integer from an empty string");
     }
 
-    auto it = input.begin();
-    auto end = input.end();
+    auto it = input.begin();  // NOLINT(readability-qualified-auto)
+    auto end = input.end();  // NOLINT(readability-qualified-auto)
 
     // skip whitespaces before number
     while (it != end && is_ascii_whitespace(*it)) {
@@ -40,19 +41,19 @@ template <> int64_t chemfiles::parse(std::string_view input) {
     int64_t result = 0;
     for (/*no initialization*/; it!=end; it++) {
         if (is_ascii_digit(*it)) {
-            int64_t digit = static_cast<int64_t>(*it - '0');
+            auto digit = static_cast<int64_t>(*it - '0');
             if (sign == -1) {
                 // Check for underflow
-                if (result >= ((std::numeric_limits<int64_t>::min() + digit) / 10))
+                if (result >= ((std::numeric_limits<int64_t>::min() + digit) / 10)) {
                     result = result * 10 - digit;
-                else {
+                } else {
                     throw error("{} is out of range for 64-bit integer", input);
                 }
             } else {
                 // Check for overflow
-                if (result <= ((std::numeric_limits<int64_t>::max() - digit) / 10))
+                if (result <= ((std::numeric_limits<int64_t>::max() - digit) / 10)) {
                     result = result * 10 + digit;
-                else {
+                } else {
                     throw error("{} is out of range for 64-bit integer", input);
                 }
             }
@@ -79,8 +80,8 @@ template <> uint64_t chemfiles::parse(std::string_view input) {
         throw error("can not parse an integer from an empty string");
     }
 
-    auto it = input.begin();
-    auto end = input.end();
+    auto it = input.begin();  // NOLINT(readability-qualified-auto)
+    auto end = input.end();  // NOLINT(readability-qualified-auto)
 
     // skip whitespaces before number
     while (it != end && is_ascii_whitespace(*it)) {
@@ -95,11 +96,11 @@ template <> uint64_t chemfiles::parse(std::string_view input) {
     uint64_t result = 0;
     for (/*no initialization*/; it!=end; it++) {
         if (is_ascii_digit(*it)) {
-            uint64_t digit = static_cast<uint64_t>(*it - '0');
+            auto digit = static_cast<uint64_t>(*it - '0');
             // Check for overflow
-            if (result <= ((std::numeric_limits<uint64_t>::max() - digit) / 10))
+            if (result <= ((std::numeric_limits<uint64_t>::max() - digit) / 10)) {
                 result = result * 10 + digit;
-            else {
+            } else {
                 throw error("{} is out of range for 64-bit unsigned integer", input);
             }
         } else {
@@ -126,8 +127,8 @@ template <> double chemfiles::parse(std::string_view input) {
         throw error("can not parse a double from an empty string");
     }
 
-    auto it = input.begin();
-    auto end = input.end();
+    auto it = input.begin();  // NOLINT(readability-qualified-auto)
+    auto end = input.end();  // NOLINT(readability-qualified-auto)
 
     // skip whitespaces before number
     while (it != end && is_ascii_whitespace(*it)) {
@@ -143,7 +144,7 @@ template <> double chemfiles::parse(std::string_view input) {
         it++;
     }
 
-    auto digit_start = it;
+    auto digit_start = it;  // NOLINT(readability-qualified-auto)
     // Get digits before decimal point or exponent, if any.
     double value = 0.0;
     while (it != end && is_ascii_digit(*it)) {
@@ -155,7 +156,7 @@ template <> double chemfiles::parse(std::string_view input) {
     // Get digits after decimal point, if any.
     if (it != end && *it == '.') {
         it++;
-        auto frac_start = it;
+        const auto* frac_start = it;
         double pow10 = 10.0;
         while (it != end && is_ascii_digit(*it)) {
             value += static_cast<double>(*it - '0') / pow10;
@@ -171,7 +172,7 @@ template <> double chemfiles::parse(std::string_view input) {
     double scale = 1.0;
     if (it != end && (*it == 'e' || *it == 'E')) {
         it++;
-        auto exponent_start = it;
+        auto exponent_start = it;  // NOLINT(readability-qualified-auto)
 
         // Get sign of exponent, if any.
         if (it != end && *it == '-') {
@@ -184,10 +185,10 @@ template <> double chemfiles::parse(std::string_view input) {
         // Get digits of exponent, if any.
         unsigned exponent = 0;
         while (it != end && is_ascii_digit(*it)) {
-            unsigned digit = static_cast<unsigned>(*it - '0');
-            if (exponent <= ((std::numeric_limits<unsigned>::max() - digit) / 10))
+            auto digit = static_cast<unsigned>(*it - '0');
+            if (exponent <= ((std::numeric_limits<unsigned>::max() - digit) / 10)) {
                 exponent = exponent * 10 + digit;
-            else {
+            } else {
                 throw error("float exponent in {} is out of range for unsigned integer", input);
             }
 
@@ -297,48 +298,51 @@ std::string chemfiles::encode_hybrid36(size_t width, int64_t value) {
     return std::string(width, '*');
 }
 
-int64_t chemfiles::decode_hybrid36(size_t width, std::string_view s) {
+int64_t chemfiles::decode_hybrid36(size_t width, std::string_view input) {
     // This function is only called within chemfiles for fixed format files.
     // Therefore, the width should also be the length of the string as this is
     // known at compile time.
-    if (s.length() > width) {
-        throw error("the length of '{}' is greater than the width '{}', this is a bug in chemfiles", s, width);
+    if (input.length() > width) {
+        throw error(
+            "the length of '{}' is greater than the width '{}', this is a bug in chemfiles",
+            input, width
+        );
     }
 
-    auto f = s[0];
+    auto f = input[0];
     if (f == '-' || f == ' ' || is_ascii_digit(f)) {
         // Negative number, these are not encoded
-        return parse<int64_t>(s);
+        return parse<int64_t>(input);
     }
 
     // See above comment. Standard says blank strings needs to be treated as 0
-    if (trim(s).size() == 0) {
+    if (trim(input).size() == 0) {
         return 0;
     }
 
     if (digits_upper.find(f) != std::string::npos) {
-        auto is_valid = std::all_of(s.begin(), s.end(), [](char c) {
+        auto is_valid = std::all_of(input.begin(), input.end(), [](char c) {
             return is_ascii_digit(c) || is_ascii_uppercase(c);
         });
 
         if (!is_valid) {
-            throw error("the value '{}' is not a valid hybrid 36 number", s);
+            throw error("the value '{}' is not a valid hybrid 36 number", input);
         }
 
-        return decode_pure(s) - 10 * pow_int(36, width - 1) + pow_int(10, width);
+        return decode_pure(input) - 10 * pow_int(36, width - 1) + pow_int(10, width);
     }
 
     if (digits_lower.find(f) != std::string::npos) {
-        auto is_valid = std::all_of(s.begin(), s.end(), [](char c) {
+        auto is_valid = std::all_of(input.begin(), input.end(), [](char c) {
             return is_ascii_digit(c) || is_ascii_lowercase(c);
          });
 
         if (!is_valid) {
-            throw error("the value '{}' is not a valid hybrid 36 number", s);
+            throw error("the value '{}' is not a valid hybrid 36 number", input);
         }
 
-        return decode_pure(s) + 16 * pow_int(36, width - 1) + pow_int(10, width);
+        return decode_pure(input) + 16 * pow_int(36, width - 1) + pow_int(10, width);
     }
 
-    throw error("the value '{}' is not a valid hybrid 36 number", s);
+    throw error("the value '{}' is not a valid hybrid 36 number", input);
 }

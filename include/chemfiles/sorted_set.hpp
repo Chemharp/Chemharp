@@ -4,6 +4,7 @@
 #ifndef CHEMFILES_SORTED_SET_HPP
 #define CHEMFILES_SORTED_SET_HPP
 
+#include <cstddef>
 #include <vector>
 #include <utility>    // IWYU pragma: keep
 #include <algorithm>  // IWYU pragma: keep

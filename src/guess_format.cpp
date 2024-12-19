@@ -9,7 +9,6 @@
 #include "chemfiles/File.hpp"
 
 #include "chemfiles/misc.hpp"
-#include "chemfiles/utils.hpp"
 #include "chemfiles/error_fmt.hpp"
 #include "chemfiles/external/optional.hpp"
 

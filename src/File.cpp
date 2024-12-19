@@ -6,10 +6,12 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include <iterator>
 #include <string_view>
 
+#include <fmt/core.h>
 #include <fmt/format.h>
 
 #include "chemfiles/File.hpp"
@@ -150,8 +152,8 @@ std::string_view TextFile::readline() {
         // How many characters are still in the buffer
         auto remainder = static_cast<size_t>(end_ - line_start_);
         // look for end of line character
-        auto needle = std::memchr(line_start_ + length, '\n', remainder - length);
-        auto newline = reinterpret_cast<const char*>(needle);
+        const auto *needle = std::memchr(line_start_ + length, '\n', remainder - length);
+        const auto *newline = reinterpret_cast<const char*>(needle);
 
         if (newline != nullptr) {
             assert(line_start_ <= newline);
@@ -216,7 +218,7 @@ std::string TextFile::readall() {
     size_t start = 0;
     while (true) {
         auto count = buffer.size() - start;
-        auto read_count = file_->read(&buffer[0] + start, count);
+        auto read_count = file_->read(buffer.data() + start, count);
         start += read_count;
         if (read_count < count) {
             // Remove additional '\0' at the end

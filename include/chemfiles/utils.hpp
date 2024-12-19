@@ -4,6 +4,7 @@
 #ifndef CHEMFILES_UTILS_HPP
 #define CHEMFILES_UTILS_HPP
 
+#include <cstddef>
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -89,8 +90,8 @@ inline char to_ascii_uppercase(char c) {
 
 /// Remove whitespaces at the beginning and end of `string`
 inline std::string_view trim(std::string_view string) {
-    auto begin = string.data();
-    auto end = string.data() + string.length();
+    const auto* begin = string.data();
+    const auto* end = string.data() + string.length();
     while (begin != end && is_ascii_whitespace(*begin)) {
         begin++;
     }

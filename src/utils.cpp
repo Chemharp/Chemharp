@@ -2,6 +2,7 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cerrno>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -14,7 +15,7 @@
 #define getcwd _getcwd
 #else
 #include <unistd.h>
-#include <limits.h>
+#include <limits.h>  // IWYU pragma: keep (_POSIX_HOST_NAME_MAX)
 #endif
 
 std::string chemfiles::user_name() {
@@ -66,7 +67,7 @@ std::string chemfiles::current_directory() {
 #ifdef CHEMFILES_WINDOWS
         auto result = getcwd(buffer.data(), static_cast<int>(size));
 #else
-        auto result = getcwd(buffer.data(), size);
+        auto* result = getcwd(buffer.data(), size);
 #endif
         if (result == nullptr) {
             if (errno == ERANGE) {

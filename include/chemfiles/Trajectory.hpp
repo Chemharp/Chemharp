@@ -4,6 +4,7 @@
 #ifndef CHEMFILES_TRAJECTORY_HPP
 #define CHEMFILES_TRAJECTORY_HPP
 
+#include <cstddef>
 #include <memory>
 #include <string>
 
@@ -100,8 +101,8 @@ public:
 
     ~Trajectory();
 
-    Trajectory(Trajectory&& other);
-    Trajectory& operator=(Trajectory&& other);
+    Trajectory(Trajectory&& other) noexcept;
+    Trajectory& operator=(Trajectory&& other) noexcept;
 
     Trajectory(const Trajectory& other) = delete;
     Trajectory& operator=(const Trajectory& other) = delete;

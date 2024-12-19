@@ -4,7 +4,9 @@
 #ifndef CHEMFILES_XDR_FILE_HPP
 #define CHEMFILES_XDR_FILE_HPP
 
+#include <cstddef>
 #include <cstdint>
+
 #include <string>
 #include <vector>
 

@@ -4,9 +4,12 @@
 #ifndef CHEMFILES_FORMAT_XYZ_HPP
 #define CHEMFILES_FORMAT_XYZ_HPP
 
+#include <cstddef>
 #include <cstdint>
+
 #include <string>
 #include <memory>
+#include <utility>
 
 #include "chemfiles/File.hpp"
 #include "chemfiles/Format.hpp"

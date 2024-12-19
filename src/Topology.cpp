@@ -2,6 +2,7 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cstddef>
+#include <utility>
 #include <vector>
 #include <unordered_map>
 
@@ -16,7 +17,7 @@
 using namespace chemfiles;
 
 void Topology::resize(size_t size) {
-    for (auto& bond: connect_.bonds()) {
+    for (const auto& bond: connect_.bonds()) {
         if (bond[0] >= size || bond[1] >= size) {
             throw error(
                 "can not resize the topology to contains {} atoms as there "
@@ -82,7 +83,7 @@ void Topology::remove(size_t i) {
 
     // Remove all bonds with the removed atom
     auto bonds = connect_.bonds();
-    for (auto& bond : bonds) {
+    for (const auto& bond : bonds) {
         if (bond[0] == i || bond[1] == i) {
             connect_.remove_bond(bond[0], bond[1]);
         }

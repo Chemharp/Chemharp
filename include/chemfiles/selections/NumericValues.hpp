@@ -30,8 +30,8 @@ public:
     /// single value
     explicit NumericValues(double value): NumericValues(value, nullptr) {}
 
-    NumericValues(NumericValues&& other);
-    NumericValues& operator=(NumericValues&& other);
+    NumericValues(NumericValues&& other) noexcept;
+    NumericValues& operator=(NumericValues&& other) noexcept;
     NumericValues(const NumericValues&) = delete;
     NumericValues& operator=(const NumericValues&) = delete;
 

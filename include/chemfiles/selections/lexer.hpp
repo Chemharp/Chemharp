@@ -4,10 +4,14 @@
 #ifndef CHEMFILES_SELECTION_LEXER_HPP
 #define CHEMFILES_SELECTION_LEXER_HPP
 
-#include <string>
-#include <vector>
-#include <cstdint>
 #include <cassert>
+#include <cstdint>
+#include <cstddef>
+
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include "chemfiles/Error.hpp"
 

@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 
 #include <array>
@@ -10,10 +11,12 @@
 #include <vector>
 #include <string_view>
 
+#include "chemfiles/Property.hpp"
 #include "chemfiles/error_fmt.hpp"
 #include "chemfiles/external/optional.hpp"
 #include "chemfiles/parse.hpp"
 #include "chemfiles/types.hpp"
+#include "chemfiles/unreachable.hpp"
 #include "chemfiles/utils.hpp"
 #include "chemfiles/warnings.hpp"
 
@@ -522,6 +525,8 @@ void LAMMPSTrajectoryFormat::read_next(Frame& frame) {
                     atom.set(fields[j].name, std::string(splitted[j]));
                 }
                 break;
+            default:
+                unreachable();
             }
         }
     }
@@ -561,8 +566,9 @@ void LAMMPSTrajectoryFormat::read_next(Frame& frame) {
 }
 
 static optional<size_t> parse_lammps_type(const std::string& type_str) {
-    if (type_str.empty())
+    if (type_str.empty()) {
         return nullopt;
+}
     try {
         int type = parse<int>(type_str);
         if (type > 0) {
@@ -606,7 +612,7 @@ void LAMMPSTrajectoryFormat::write_next(const Frame& frame) {
 
     bool has_names = false;
     for (size_t i = 0; i < frame.size(); ++i) {
-        auto& atom = frame[i];
+        const auto& atom = frame[i];
         if (!atom.name().empty()) {
             has_names = true;
             break;
@@ -625,7 +631,7 @@ void LAMMPSTrajectoryFormat::write_next(const Frame& frame) {
     }
     file_.print("\n");
     for (size_t i = 0; i < frame.size(); ++i) {
-        auto& atom = frame[i];
+        const auto& atom = frame[i];
         // LAMMPS uses atom IDs that start with 1
         file_.print("{:d} {:g} {:g} {:g}", i + 1, positions[i][0], positions[i][1],
                     positions[i][2]);
@@ -633,8 +639,9 @@ void LAMMPSTrajectoryFormat::write_next(const Frame& frame) {
         if (type && (min_numeric_type_ == 0 || *type <= min_numeric_type_)) {
             // a valid numeric type and no other invalid types encountered previously
             file_.print(" {:d}", *type);
-            if (*type > max_numeric_type_)
+            if (*type > max_numeric_type_) {
                 max_numeric_type_ = *type;
+            }
         } else {
             // use a generated numeric type because trajectory contains invalid types
             auto search = type_list_.find(atom.type());
@@ -657,7 +664,7 @@ void LAMMPSTrajectoryFormat::write_next(const Frame& frame) {
         }
         file_.print(" {:g} {:g}", atom.mass(), atom.charge());
         if (velocities) {
-            auto& v = (*velocities)[i];
+            const auto& v = (*velocities)[i];
             file_.print(" {:g} {:g} {:g}", v[0], v[1], v[2]);
         }
         file_.print("\n");

@@ -4,11 +4,14 @@
 #ifndef CHEMFILES_FORMAT_LAMMPS_TRAJECTORY_HPP
 #define CHEMFILES_FORMAT_LAMMPS_TRAJECTORY_HPP
 
-#include <array>
+#include <cstddef>
 #include <cstdint>
+
+#include <array>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include "chemfiles/File.hpp"
 #include "chemfiles/Format.hpp"

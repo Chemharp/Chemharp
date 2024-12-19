@@ -2,11 +2,17 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cassert>
+#include <cstddef>
+
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "chemfiles/Property.hpp"
+#include "chemfiles/config.h"
 #include "chemfiles/types.hpp"
+#include "chemfiles/unreachable.hpp"
 #include "chemfiles/utils.hpp"
 #include "chemfiles/warnings.hpp"
 #include "chemfiles/error_fmt.hpp"
@@ -25,7 +31,7 @@
 using namespace chemfiles;
 
 /// Create the basic builder common to AMBER and AMBERRESTART conventions
-static netcdf3::Netcdf3Builder base_builder(std::string convention, std::string title, size_t n_atoms);
+static netcdf3::Netcdf3Builder base_builder(std::string convention, const std::string& title, size_t n_atoms);
 
 /// Find the dimension with the given name in the file
 static optional<netcdf3::Dimension&> find_dimension(netcdf3::Netcdf3File& file, const std::string& name);
@@ -57,7 +63,7 @@ AmberNetCDFBase::AmberNetCDFBase(std::string convention, std::string path, File:
         throw format_error("invalid Amber NetCDF file at '{}': {}", file_.path(), e.what());
     }
 
-    auto& attributes = file_.attributes();
+    const auto& attributes = file_.attributes();
     auto title = attributes.find("title");
     if (title != attributes.end() && title->second.kind() == netcdf3::Value::STRING) {
         file_title_ = title->second.as_string();
@@ -67,7 +73,7 @@ AmberNetCDFBase::AmberNetCDFBase(std::string convention, std::string path, File:
 
     // get the variables actually defined in the file
     variables_.coordinates = this->get_variable("coordinates");
-    if (variables_.coordinates.var) {
+    if (variables_.coordinates.var != nullptr) {
         auto units_attr = variables_.coordinates.var->attribute("units");
         if (units_attr && units_attr->kind() == netcdf3::Value::STRING) {
             variables_.coordinates.scale *= scale_for_distance(units_attr->as_string());
@@ -77,7 +83,7 @@ AmberNetCDFBase::AmberNetCDFBase(std::string convention, std::string path, File:
     }
 
     variables_.velocities = this->get_variable("velocities");
-    if (variables_.velocities.var) {
+    if (variables_.velocities.var != nullptr) {
         auto units_attr = variables_.velocities.var->attribute("units");
         if (units_attr && units_attr->kind() == netcdf3::Value::STRING) {
             variables_.velocities.scale *= scale_for_velocity(units_attr->as_string());
@@ -86,7 +92,7 @@ AmberNetCDFBase::AmberNetCDFBase(std::string convention, std::string path, File:
 
     variables_.cell_lengths = this->get_variable("cell_lengths");
     variables_.cell_angles = this->get_variable("cell_angles");
-    if (variables_.cell_lengths.var && variables_.cell_angles.var) {
+    if ((variables_.cell_lengths.var != nullptr) && (variables_.cell_angles.var != nullptr)) {
         auto units_attr = variables_.cell_lengths.var->attribute("units");
         if (units_attr && units_attr->kind() == netcdf3::Value::STRING) {
             variables_.cell_lengths.scale *= scale_for_distance(units_attr->as_string());
@@ -106,8 +112,8 @@ AmberNetCDFBase::AmberNetCDFBase(std::string convention, std::string path, File:
                 warning("Amber NetCDF reader", "unknown unit ({}) for angles", units);
             }
         }
-    } else if (variables_.cell_lengths.var) {
-        if (!variables_.cell_angles.var) {
+    } else if (variables_.cell_lengths.var != nullptr) {
+        if (variables_.cell_angles.var == nullptr) {
             throw format_error(
                 "invalid Amber NetCDF file at '{}': "
                 "cell_lengths requires cell_angles to be defined",
@@ -115,7 +121,7 @@ AmberNetCDFBase::AmberNetCDFBase(std::string convention, std::string path, File:
             );
         }
 
-        if (!variables_.coordinates.var) {
+        if (variables_.coordinates.var == nullptr) {
             throw format_error(
                 "invalid Amber NetCDF file at '{}': "
                 "cell_lengths requires coordinates to be defined",
@@ -208,11 +214,11 @@ void AmberNetCDFBase::read_step(const size_t step, Frame& frame) {
 
     frame.resize(n_atoms_);
 
-    if (variables_.coordinates.var) {
+    if (variables_.coordinates.var != nullptr) {
         this->read_array(variables_.coordinates, frame.positions());
     }
 
-    if (variables_.velocities.var) {
+    if (variables_.velocities.var != nullptr) {
         frame.add_velocities();
         this->read_array(variables_.velocities, *frame.velocities());
     }
@@ -245,12 +251,12 @@ void AmberNetCDFBase::write(const Frame& frame) {
 
     write_cell(frame.cell());
 
-    if (variables_.coordinates.var) {
+    if (variables_.coordinates.var != nullptr) {
         this->write_array(variables_.coordinates, frame.positions());
     }
 
     if (frame.velocities()) {
-        if (variables_.velocities.var) {
+        if (variables_.velocities.var != nullptr) {
             this->write_array(variables_.velocities, *frame.velocities());
         } else {
             warning("AMBER NetCDF", "this file does not contain space for velocities, they will not be saved");
@@ -263,7 +269,7 @@ void AmberNetCDFBase::write(const Frame& frame) {
 /******************************************************************************/
 
 UnitCell AmberNetCDFBase::read_cell() {
-    if (!variables_.cell_lengths.var || !variables_.cell_angles.var) {
+    if ((variables_.cell_lengths.var == nullptr) || (variables_.cell_angles.var == nullptr)) {
         // No cell information
         return {};
     }
@@ -340,7 +346,7 @@ void AmberNetCDFBase::read_array(variable_scale_t& variable, span<Vector3D> arra
 /******************************************************************************/
 
 void AmberNetCDFBase::write_cell(const UnitCell& cell) {
-    if (!variables_.cell_lengths.var || !variables_.cell_angles.var) {
+    if ((variables_.cell_lengths.var == nullptr) || (variables_.cell_angles.var == nullptr)) {
         // no cell information
         if (cell.shape() != UnitCell::INFINITE) {
             warning("AMBER NetCDF", "this file does not contain space for unit cell data, it will not be saved");
@@ -358,7 +364,7 @@ void AmberNetCDFBase::write_cell(const UnitCell& cell) {
         };
         cell_lengths->write(step_, data_f32.data(), data_f32.size());
     } else if (cell_lengths->type() == netcdf3::constants::NC_DOUBLE) {
-        cell_lengths->write(step_, &lengths[0], 3);
+        cell_lengths->write(step_, lengths.data(), 3);
     } else {
         unreachable();
     }
@@ -373,7 +379,7 @@ void AmberNetCDFBase::write_cell(const UnitCell& cell) {
         };
         cell_angles->write(step_, data_f32.data(), data_f32.size());
     } else if (cell_angles->type() == netcdf3::constants::NC_DOUBLE) {
-        cell_angles->write(step_, &angles[0], 3);
+        cell_angles->write(step_, angles.data(), 3);
     } else {
         unreachable();
     }
@@ -389,7 +395,7 @@ void AmberNetCDFBase::write_array(variable_scale_t& variable, span<const Vector3
         }
         variable.var->write(step_, buffer_f32_);
     } else if (variable.var->type() == netcdf3::constants::NC_DOUBLE) {
-        variable.var->write(step_, &array[0][0], 3 * array.size());
+        variable.var->write(step_, array[0].data(), 3 * array.size());
     } else {
         throw format_error("invalid type for variable, expected floating point");
     }
@@ -693,7 +699,7 @@ template<> const FormatMetadata& chemfiles::format_metadata<AmberRestart>() {
 /******************************************************************************/
 
 optional<netcdf3::Dimension&> find_dimension(netcdf3::Netcdf3File& file, const std::string& name) {
-    for (auto& dimension: file.dimensions()) {
+    for (const auto& dimension: file.dimensions()) {
         if (dimension->name == name) {
             return *dimension;
         }
@@ -711,9 +717,9 @@ size_t get_dimension_id(const netcdf3::Netcdf3Builder& builder, const std::strin
     throw error("internal error: unable to find a dimension named {} in this Netcdf3Builder", name);
 }
 
-netcdf3::Netcdf3Builder base_builder(std::string convention, std::string title, size_t n_atoms) {
+netcdf3::Netcdf3Builder base_builder(std::string convention, const std::string& title, size_t n_atoms) {
     auto builder = netcdf3::Netcdf3Builder();
-    builder.add_attribute("Conventions", {convention});
+    builder.add_attribute("Conventions", {std::move(convention)});
     builder.add_attribute("ConventionVersion", {"1.0"});
     builder.add_attribute("program", {"chemfiles"});
     builder.add_attribute("programVersion", {CHEMFILES_VERSION});

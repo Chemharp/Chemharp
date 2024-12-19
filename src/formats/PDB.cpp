@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 
 #include <map>
@@ -13,7 +14,6 @@
 #include <utility>
 #include <algorithm>
 #include <string_view>
-#include <unordered_map>
 
 #include "chemfiles/types.hpp"
 #include "chemfiles/utils.hpp"
@@ -207,6 +207,7 @@ void PDBFormat::read_next(Frame& frame) {
         case Record::IGNORED_:
             continue; // Nothing to do
         case Record::UNKNOWN_:
+        default:
             if (!file_.eof()) {
                 warning("PDB reader", "ignoring unknown record: {}", line);
             }
@@ -684,9 +685,7 @@ static std::string to_pdb_index(int64_t value, size_t width) {
     auto encoded = encode_hybrid36(width, value + 1);
 
     if (encoded[0] == '*' && (value == MAX_HYBRID36_W4_NUMBER || value == MAX_HYBRID36_W5_NUMBER)) {
-        auto type = width == 5 ?
-            "atom" : "residue";
-
+        const auto* type = width == 5 ? "atom" : "residue";
         warning("PDB writer", "the value for a {} serial/id is too large, using '{}' instead", type, encoded);
     }
 
@@ -712,7 +711,7 @@ static ResidueInformation get_residue_information(optional<const Residue&> resid
         return info;
     }
 
-    auto residue = *residue_opt;
+    const auto& residue = *residue_opt;
 
     if (residue.get<Property::BOOL>("is_standard_pdb").value_or(false)) {
         // only use ATOM if the residue is standardized
@@ -763,13 +762,13 @@ static ResidueInformation get_residue_information(optional<const Residue&> resid
 }
 
 static bool needs_ter_record(const ResidueInformation& residue) {
-    if (residue.composition_type.empty() ||
-        residue.composition_type == "other" || residue.composition_type == "OTHER" ||
-        residue.composition_type == "non-polymer" || residue.composition_type == "NON-POLYMER") {
-        return false;
-    }
-
-    return true;
+    return !(
+        residue.composition_type.empty() ||
+        residue.composition_type == "other" ||
+        residue.composition_type == "OTHER" ||
+        residue.composition_type == "non-polymer" ||
+        residue.composition_type == "NON-POLYMER"
+    );
 }
 
 // This function adjusts a given index to account for intervening TER records.
@@ -816,7 +815,7 @@ void PDBFormat::write_next(const Frame& frame) {
     optional<ResidueInformation> last_residue = nullopt;
     std::vector<size_t> ter_serial_numbers;
 
-    auto& positions = frame.positions();
+    const auto& positions = frame.positions();
     for (size_t i = 0; i < frame.size(); i++) {
 
         auto altloc = frame[i].get<Property::STRING>("altloc").value_or(" ");
@@ -841,7 +840,7 @@ void PDBFormat::write_next(const Frame& frame) {
             ++ter_count;
         }
 
-        auto& pos = positions[i];
+        const auto& pos = positions[i];
         check_values_size(pos, 8, "atomic position");
         file_.print(
             "{: <6}{: >5} {: <4s}{:1}{:3} {:1}{: >4s}{:1}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {: <4s}{: >2s}\n",
@@ -859,7 +858,7 @@ void PDBFormat::write_next(const Frame& frame) {
     }
 
     auto connect = std::vector<std::vector<int64_t>>(frame.size());
-    for (auto& bond : frame.topology().bonds()) {
+    for (const auto& bond : frame.topology().bonds()) {
         if (is_atom_record[bond[0]] && is_atom_record[bond[1]]) { // both must be standard residue atoms
             continue;
         }

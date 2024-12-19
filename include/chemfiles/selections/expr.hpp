@@ -5,9 +5,11 @@
 #define CHEMFILES_SELECTION_EXPR_HPP
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <memory>
 #include <functional>
@@ -128,8 +130,8 @@ public:
     /// Create a sub-selection from an AST
     SubSelection(std::string selection);
 
-    SubSelection(SubSelection&&);
-    SubSelection& operator=(SubSelection&&);
+    SubSelection(SubSelection&&) noexcept;
+    SubSelection& operator=(SubSelection&&) noexcept;
     ~SubSelection();
 
     /// Evaluate the sub-selection and return the list of matching atoms

@@ -4,8 +4,11 @@
 #ifndef CHEMFILES_SELECTION_PARSER_HPP
 #define CHEMFILES_SELECTION_PARSER_HPP
 
+#include <cstddef>
+
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 #include <cassert>
 

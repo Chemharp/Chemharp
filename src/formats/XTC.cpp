@@ -2,10 +2,12 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "chemfiles/error_fmt.hpp"
@@ -226,7 +228,7 @@ void XTCFormat::write(const Frame& frame) {
     };
     write_frame_header(header);
 
-    std::vector<float> box(3 * 3);
+    std::vector<float> box(9);
     get_cell(box, frame);
     file_.write_f32(box);
 
@@ -254,7 +256,7 @@ void XTCFormat::write_frame_header(const FrameHeader& header) {
 }
 
 void get_cell(std::vector<float>& box, const Frame& frame) {
-    assert(box.size() == 3 * 3);
+    assert(box.size() == 9);
     // Factor 10 because the lengths are in nm in the XTC format
     auto matrix = frame.cell().matrix() / 10.0;
     box[0] = static_cast<float>(matrix[0][0]);

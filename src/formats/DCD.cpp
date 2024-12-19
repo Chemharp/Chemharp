@@ -1,11 +1,21 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+
+#include <string>
 #include <utility>
 #include <memory>
 #include <set>
+#include <vector>
 
-#include "chemfiles/utils.hpp"
+#include "chemfiles/File.hpp"
+#include "chemfiles/Property.hpp"
+#include "chemfiles/types.hpp"
 #include "chemfiles/warnings.hpp"
 #include "chemfiles/error_fmt.hpp"
 
@@ -103,8 +113,7 @@ static std::unique_ptr<BinaryFile> open_dcd_file(std::string path, File::Mode mo
 
 
 DCDFormat::DCDFormat(std::string path, File::Mode mode, File::Compression compression):
-    file_(nullptr),
-    title_("")
+    file_(nullptr)
 {
     if (compression != File::DEFAULT) {
         throw format_error("compression is not supported for DCD files");

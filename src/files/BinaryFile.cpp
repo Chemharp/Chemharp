@@ -1,19 +1,24 @@
 #include <cassert>
 #include <cerrno>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
+
+#include <memory>
+#include <string>
 #include <type_traits>
 
+#include "chemfiles/File.hpp"
 #include "chemfiles/error_fmt.hpp"
-#include "chemfiles/external/span.hpp"
 #include "chemfiles/unreachable.hpp"
 #include "chemfiles/warnings.hpp"
 
 #include "chemfiles/files/BinaryFile.hpp"
 
-#include <fcntl.h>
+#include <sys/fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <utility>
 
 #ifdef CHEMFILES_WINDOWS
 #include <io.h>
@@ -500,7 +505,7 @@ inline uint64_t swap_endianness(uint64_t value) {
 
 template<typename T>
 inline void BigEndianFile::read_as_big_endian(T* data, size_t count) {
-    auto char_data = reinterpret_cast<char*>(data);
+    auto* char_data = reinterpret_cast<char*>(data);
     const size_t byte_count = sizeof(T) * count;
     this->read_char(char_data, byte_count);
 #if CHEMFILES_BYTE_ORDER == CHEMFILES_LITTLE_ENDIAN
@@ -605,7 +610,7 @@ void BigEndianFile::write_f64(const double* data, size_t count) {
 
 template<typename T>
 inline void LittleEndianFile::read_as_little_endian(T* data, size_t count) {
-    auto char_data = reinterpret_cast<char*>(data);
+    auto* char_data = reinterpret_cast<char*>(data);
     const size_t byte_count = sizeof(T) * count;
     this->read_char(char_data, byte_count);
 #if CHEMFILES_BYTE_ORDER == CHEMFILES_BIG_ENDIAN

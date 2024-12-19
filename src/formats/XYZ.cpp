@@ -2,17 +2,20 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 
 #include <map>
 #include <set>
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
-#include <exception>
 #include <string_view>
 #include <unordered_map>
 
+#include <fmt/core.h>
 #include <fmt/format.h>
 
 #include "chemfiles/types.hpp"
@@ -26,7 +29,6 @@
 #include "chemfiles/File.hpp"
 #include "chemfiles/Atom.hpp"
 #include "chemfiles/Frame.hpp"
-#include "chemfiles/Topology.hpp"
 #include "chemfiles/Property.hpp"
 #include "chemfiles/UnitCell.hpp"
 #include "chemfiles/FormatMetadata.hpp"
@@ -39,6 +41,7 @@ using namespace chemfiles;
 static UnitCell parse_cell(std::string_view lattice);
 
 struct extended_property {
+    extended_property(std::string name_, Property::Kind type_): name(std::move(name_)), type(type_) {}
     std::string name;
     Property::Kind type;
 };
@@ -57,7 +60,7 @@ static void read_atomic_properties(const properties_list_t& properties, std::str
 static properties_list_t get_atom_properties(const Frame& frame);
 
 /// Generate the extended XYZ comment line for the given frame
-static std::string write_extended_comment_line(const Frame& frame, properties_list_t properties);
+static std::string write_extended_comment_line(const Frame& frame, const properties_list_t& properties);
 
 template<> const FormatMetadata& chemfiles::format_metadata<XYZFormat>() {
     static FormatMetadata metadata;
@@ -80,14 +83,16 @@ template<> const FormatMetadata& chemfiles::format_metadata<XYZFormat>() {
 }
 
 void XYZFormat::read_next(Frame& frame) {
-    size_t n_atoms = parse<size_t>(file_.readline());
+    auto n_atoms = parse<size_t>(file_.readline());
 
     auto properties = read_extended_comment_line(file_.readline(), frame);
 
     frame.reserve(n_atoms);
     for (size_t i=0; i<n_atoms; i++) {
         auto line = file_.readline();
-        double x = 0, y = 0, z = 0;
+        double x = 0;
+        double y = 0;
+        double z = 0;
         std::string name;
         auto count = scan(line, name, x, y, z);
         auto atom = Atom(std::move(name));
@@ -97,7 +102,7 @@ void XYZFormat::read_next(Frame& frame) {
 }
 
 void XYZFormat::write_next(const Frame& frame) {
-    auto& positions = frame.positions();
+    const auto& positions = frame.positions();
     auto properties = get_atom_properties(frame);
 
     file_.print("{}\n", frame.size());
@@ -213,7 +218,7 @@ static bool contains_double_quote(std::string_view s) {
     return false;
 }
 
-std::string write_extended_comment_line(const Frame& frame, properties_list_t properties) {
+std::string write_extended_comment_line(const Frame& frame, const properties_list_t& properties) {
     std::string result = "Properties=species:S:1:pos:R:3";
 
     for (const auto& property: properties) {
@@ -236,6 +241,8 @@ std::string write_extended_comment_line(const Frame& frame, properties_list_t pr
             type = 'R';
             count = 3;
             break;
+        default:
+            unreachable();
         }
 
         result += fmt::format(":{}:{}:{}", property.name, type, count);
@@ -299,6 +306,8 @@ std::string write_extended_comment_line(const Frame& frame, properties_list_t pr
                 result += fmt::format("\"{:g} {:g} {:g}\"", v[0], v[1], v[2]);
             }
             break;
+        default:
+            unreachable();
         }
     }
     return result;
@@ -314,7 +323,7 @@ static bool is_valid_property_name(const std::string& name) {
     }
 
     for (auto c: name) {
-        if (!(is_ascii_alphanumeric(c) || c == '_')) {
+        if (!is_ascii_alphanumeric(c) && c != '_') {
             return false;
         }
     }
@@ -389,7 +398,7 @@ properties_list_t get_atom_properties(const Frame& frame) {
             }
         }
 
-        auto& atom_properties = atom.properties();
+        const auto& atom_properties = atom.properties();
         if (atom_properties && (*atom_properties).size() > all_properties.size()) {
             // warn for properties defined on this atom but not on others
             for (const auto& property: *atom.properties()) {
@@ -414,7 +423,7 @@ properties_list_t get_atom_properties(const Frame& frame) {
     auto results = properties_list_t();
     results.reserve(all_properties.size());
     for (auto property: std::move(all_properties)) {
-        results.push_back({std::move(property.first), std::move(property.second)});
+        results.emplace_back(property.first, property.second);
     }
     return results;
 }
@@ -488,7 +497,7 @@ private:
             advance();
         }
 
-        auto start = current_;
+        const auto* start = current_;
         size_t size = 0;
         while (!done()) {
             if (check_for_quote && current() == quote) {
@@ -654,7 +663,7 @@ properties_list_t read_extended_comment_line(std::string_view line, Frame& frame
         if (name == "Lattice" || name == "Properties") {
             continue;
         }
-        frame.set(std::string(name), std::move(it.second));
+        frame.set(std::string(name), it.second);
     }
 
     if (properties.count("Lattice") == 1) {
@@ -700,7 +709,7 @@ void read_atomic_properties(const properties_list_t& properties, std::string_vie
             Vector3D value;
             auto count = scan(line, value[0], value[1], value[2]);
             line.remove_prefix(count);
-            atom.set(property.name, std::move(value));
+            atom.set(property.name, value);
         } else {
             unreachable();
         }
