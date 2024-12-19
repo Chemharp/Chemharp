@@ -4,6 +4,7 @@
 #ifndef CHEMFILES_TOPOLOGY_HPP
 #define CHEMFILES_TOPOLOGY_HPP
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <unordered_map>

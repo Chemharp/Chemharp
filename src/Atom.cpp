@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include "chemfiles/Atom.hpp"
 #include "chemfiles/periodic_table.hpp"

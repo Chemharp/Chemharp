@@ -20,7 +20,7 @@ public:
     /// Open `memory` as though it were a file in mode `mode`. No copy of `memory` is
     /// made and the original object **MUST** not be freed until this object is destroyed
     MemoryFile(std::shared_ptr<MemoryBuffer> memory, File::Mode mode)
-        : TextFileImpl(""), current_location_(0), buffer_(std::move(memory)), mode_(mode)
+        : TextFileImpl(""), buffer_(std::move(memory)), mode_(mode)
     {}
 
     size_t read(char* data, size_t count) override;
@@ -31,7 +31,7 @@ public:
 
 private:
     /// Current reading location
-    size_t current_location_;
+    size_t current_location_ = 0;
 
     /// An input-out stream that performs all the read operations, shared with
     /// the trajectory

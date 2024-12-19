@@ -2,7 +2,9 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+
 #include <map>
 #include <array>
 #include <vector>
@@ -441,7 +443,7 @@ double cif_to_double(std::string_view line) {
     // just parse it
     std::string line_string;
 
-    auto open = std::find(line.begin(), line.end(), '(');
+    const auto* open = std::find(line.begin(), line.end(), '(');
     if (open != line.end()) {
         line_string = std::string(line);
         line_string.erase(std::remove(line_string.begin(), line_string.end(), '('), line_string.end());

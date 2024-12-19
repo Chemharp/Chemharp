@@ -3,14 +3,15 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 
 #include <map>
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 #include <memory>
 #include <functional>
-#include <string_view>
 
 #include "chemfiles/selections/expr.hpp"
 #include "chemfiles/selections/lexer.hpp"

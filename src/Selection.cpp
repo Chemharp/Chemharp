@@ -1,8 +1,10 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
+#include <cstddef>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "chemfiles/Frame.hpp"
@@ -70,13 +72,14 @@ static unsigned max_variable(Context context) {
     case Context::DIHEDRAL:
     case Context::FOUR:
         return 3;
+    default:
+        unreachable();
     }
-    unreachable();
 }
 
 Selection::~Selection() = default;
-Selection::Selection(Selection&&) = default;
-Selection& Selection::operator=(Selection&&) = default;
+Selection::Selection(Selection&&) noexcept = default;
+Selection& Selection::operator=(Selection&&) noexcept = default;
 
 Selection::Selection(std::string selection): selection_(std::move(selection)), ast_(nullptr) {
     std::string selection_string;
@@ -98,19 +101,20 @@ Selection::Selection(std::string selection): selection_(std::move(selection)), a
 
 size_t Selection::size() const {
     switch (context_) {
-        case Context::ATOM:
-            return 1;
-        case Context::PAIR:
-        case Context::BOND:
-            return 2;
-        case Context::THREE:
-        case Context::ANGLE:
-            return 3;
-        case Context::FOUR:
-        case Context::DIHEDRAL:
-            return 4;
+    case Context::ATOM:
+        return 1;
+    case Context::PAIR:
+    case Context::BOND:
+        return 2;
+    case Context::THREE:
+    case Context::ANGLE:
+        return 3;
+    case Context::FOUR:
+    case Context::DIHEDRAL:
+        return 4;
+    default:
+        unreachable();
     }
-    unreachable();
 }
 
 std::vector<size_t> Selection::list(const Frame& frame) const {
@@ -156,7 +160,7 @@ std::vector<Match> evaluate_pairs(const Frame& frame, match_checker is_match) {
 template <typename match_checker>
 std::vector<Match> evaluate_bonds(const Frame& frame, match_checker is_match) {
     auto matches = std::vector<Match>();
-    for (auto& bond: frame.topology().bonds()) {
+    for (const auto& bond: frame.topology().bonds()) {
         auto match = Match(bond[0], bond[1]);
         if (is_match(frame, match)) {
             matches.emplace_back(match);
@@ -194,7 +198,7 @@ std::vector<Match> evaluate_three(const Frame& frame, match_checker is_match) {
 template <typename match_checker>
 std::vector<Match> evaluate_angles(const Frame& frame, match_checker is_match) {
     auto matches = std::vector<Match>();
-    for (auto& angle: frame.topology().angles()) {
+    for (const auto& angle: frame.topology().angles()) {
         auto match = Match(angle[0], angle[1], angle[2]);
         if (is_match(frame, match)) {
             matches.emplace_back(match);
@@ -235,7 +239,7 @@ std::vector<Match> evaluate_four(const Frame& frame, match_checker is_match) {
 template <typename match_checker>
 std::vector<Match> evaluate_dihedrals(const Frame& frame, match_checker is_match) {
     auto matches = std::vector<Match>();
-    for (auto& dihedral: frame.topology().dihedrals()) {
+    for (const auto& dihedral: frame.topology().dihedrals()) {
         auto match = Match(dihedral[0], dihedral[1], dihedral[2], dihedral[3]);
         if (is_match(frame, match)) {
             matches.emplace_back(match);
@@ -259,20 +263,21 @@ std::vector<Match> Selection::evaluate(const Frame& frame) const {
 
     ast_->clear();
     switch (context_) {
-        case Context::ATOM:
-            return evaluate_atoms(frame, is_match);
-        case Context::PAIR:
-            return evaluate_pairs(frame, is_match);
-        case Context::BOND:
-            return evaluate_bonds(frame, is_match);
-        case Context::THREE:
-            return evaluate_three(frame, is_match);
-        case Context::ANGLE:
-            return evaluate_angles(frame, is_match);
-        case Context::FOUR:
-            return evaluate_four(frame, is_match);
-        case Context::DIHEDRAL:
-            return evaluate_dihedrals(frame, is_match);
+    case Context::ATOM:
+        return evaluate_atoms(frame, is_match);
+    case Context::PAIR:
+        return evaluate_pairs(frame, is_match);
+    case Context::BOND:
+        return evaluate_bonds(frame, is_match);
+    case Context::THREE:
+        return evaluate_three(frame, is_match);
+    case Context::ANGLE:
+        return evaluate_angles(frame, is_match);
+    case Context::FOUR:
+        return evaluate_four(frame, is_match);
+    case Context::DIHEDRAL:
+        return evaluate_dihedrals(frame, is_match);
+    default:
+        unreachable();
     }
-    unreachable();
 }

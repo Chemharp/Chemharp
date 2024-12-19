@@ -1,6 +1,7 @@
 #ifndef CHFL_SHARED_ALLOCATOR_HPP
 #define CHFL_SHARED_ALLOCATOR_HPP
 
+#include <cstddef>
 #include <vector>
 #include <functional>
 #include <unordered_map>

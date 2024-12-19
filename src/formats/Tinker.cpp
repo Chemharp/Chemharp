@@ -2,6 +2,7 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 
 #include <array>
@@ -63,7 +64,8 @@ void TinkerFormat::read_next(Frame& frame) {
     line = file_.readline();
     if (is_unit_cell_line(line)) {
         // Read the cell
-        Vector3D lengths, angles;
+        Vector3D lengths;
+        Vector3D angles;
         scan(line, lengths[0], lengths[1], lengths[2], angles[0], angles[1], angles[2]);
         frame.set_cell({lengths, angles});
     } else {
@@ -72,8 +74,11 @@ void TinkerFormat::read_next(Frame& frame) {
 
     for (size_t i = 0; i < n_atoms; i++) {
         line = file_.readline();
-        double x = 0, y = 0, z = 0;
-        int id = 0, atom_type = 0;
+        double x = 0;
+        double y = 0;
+        double z = 0;
+        int id = 0;
+        int atom_type = 0;
         std::string name;
         auto count = scan(line, id, name, x, y, z, atom_type);
 
@@ -101,24 +106,24 @@ void TinkerFormat::write_next(const Frame& frame) {
         lengths[0], lengths[1], lengths[2], angles[0], angles[1], angles[2]
     );
 
-    auto& topology = frame.topology();
+    const auto& topology = frame.topology();
     // Build type index numbering. type_id will be searched for each atom type,
     // and the position can be used a an unique integer identifier for the atom
     // type.
     auto types_id = sorted_set<std::string>();
-    for (auto& atom: topology) {
+    for (const auto& atom: topology) {
         types_id.insert(atom.type());
     }
 
     // Build bonds index. It will contains all atoms bonded to the atom i in
     // bonded_to[i].
     auto bonded_to = std::vector<std::vector<size_t>>(frame.size());
-    for (auto& bond: topology.bonds()) {
+    for (const auto& bond: topology.bonds()) {
         bonded_to[bond[0]].push_back(bond[1]);
         bonded_to[bond[1]].push_back(bond[0]);
     }
 
-    auto& positions = frame.positions();
+    const auto& positions = frame.positions();
     for (size_t i = 0; i < frame.size(); i++) {
         auto name = topology[i].name();
         if (name.empty()) {

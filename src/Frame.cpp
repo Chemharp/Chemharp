@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cmath>
 #include <string>
+#include <utility>
 #include <vector>
 #include <iterator>
 #include <algorithm>
@@ -12,7 +13,6 @@
 
 #include "chemfiles/types.hpp"
 #include "chemfiles/error_fmt.hpp"
-#include "chemfiles/periodic_table.hpp"
 #include "chemfiles/external/optional.hpp"
 
 #include "chemfiles/Atom.hpp"
@@ -96,7 +96,8 @@ void Frame::guess_bonds() {
     // We need to remove bonds between hydrogen atoms which are bonded more than
     // once
     for (auto& bond : bonds) {
-        auto i = bond[0], j = bond[1];
+        auto i = bond[0];
+        auto j = bond[1];
         if (topology_[i].type() != "H") {
             continue;
         }

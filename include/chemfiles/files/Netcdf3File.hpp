@@ -14,12 +14,14 @@
 #include <cstdio>
 #include <cstdint>
 
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
 #include <memory>
 #include <utility>
 
+#include "chemfiles/File.hpp"
 #include "chemfiles/external/optional.hpp"
 #include "chemfiles/files/BinaryFile.hpp"
 
@@ -89,11 +91,11 @@ public:
         }
     }
 
-    Value(Value&& other): Value(0) {
+    Value(Value&& other) noexcept: Value(0) {
         *this = std::move(other);
     }
 
-    Value& operator=(Value&& other);
+    Value& operator=(Value&& other) noexcept;
 
     Value(const Value& other): Value(0) {
         *this = other;

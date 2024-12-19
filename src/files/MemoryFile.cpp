@@ -1,14 +1,15 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
+#include <cstddef>
 #include <cstdint>
-#include <vector>
+
 #include <memory>
 #include <algorithm>
 
 #include "chemfiles/File.hpp"
 #include "chemfiles/files/MemoryFile.hpp"
-#include "chemfiles/files/MemoryBuffer.hpp"
+#include "chemfiles/files/MemoryBuffer.hpp"  // IWYU pragma: keep
 
 #include "chemfiles/error_fmt.hpp"
 

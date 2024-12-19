@@ -4,9 +4,11 @@
 #ifndef CHEMFILES_FORMAT_CML_HPP
 #define CHEMFILES_FORMAT_CML_HPP
 
+#include <cstddef>
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <utility>
 
 #include <pugixml.hpp>
 

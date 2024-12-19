@@ -11,6 +11,7 @@
 #include <tuple>
 #include <deque>
 #include <string>
+#include <utility>
 #include <vector>
 #include <iterator>
 #include <algorithm>
@@ -265,7 +266,7 @@ void SMIFormat::read_next(Frame& frame) {
         }
 
         // Check for 'CurlySMILES' and add the associated tags
-        if (smiles[i] == '{' && topology.size()) {
+        if (smiles[i] == '{' && (topology.size() != 0)) {
             auto prop_end = smiles.find_first_of('}', i);
 
             if (prop_end == std::string::npos) {
@@ -440,7 +441,7 @@ static void find_rings(
         // previous_atom Atom which was bound to the current atom
 
         std::stack<std::pair<size_t, size_t>> atoms_to_process;
-        atoms_to_process.push({ current_atom, current_atom });
+        atoms_to_process.emplace(current_atom, current_atom);
 
         while (!atoms_to_process.empty()) {
 
@@ -449,7 +450,7 @@ static void find_rings(
             std::tie(current_atom, previous_atom) = atoms_to_process.top();
             atoms_to_process.pop();
 
-            auto& current_atom_bonds = adj_list[current_atom];
+            const auto& current_atom_bonds = adj_list[current_atom];
 
             // We go through the neighbors backwards because we are using a
             // stack and want to go through them in the forward direction
@@ -689,7 +690,7 @@ void SMIFormat::write_next(const Frame& frame) {
     // Create an adjacent list as working with this is easier
     adj_list_.clear();
     adj_list_.resize(frame.size());
-    for (auto& bond : frame.topology().bonds()) {
+    for (const auto& bond : frame.topology().bonds()) {
         adj_list_[bond[0]].push_back(bond[1]);
         adj_list_[bond[1]].push_back(bond[0]);
     }

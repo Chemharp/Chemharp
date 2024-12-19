@@ -1,12 +1,22 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
+
 #include <cassert>
-#include <iostream>
+#include <cstddef>
+#include <cstdint>
+
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "chemfiles/File.hpp"
 #include "chemfiles/files/Netcdf3File.hpp"
 
 #include "chemfiles/error_fmt.hpp"
+#include "chemfiles/external/optional.hpp"
+#include "chemfiles/files/BinaryFile.hpp"
 #include "chemfiles/unreachable.hpp"
 
 using namespace chemfiles;
@@ -74,7 +84,7 @@ template<> struct nc_type_info<double> {
 
 /******************************************************************************/
 
-Value& Value::operator=(Value&& other) {
+Value& Value::operator=(Value&& other) noexcept {
     if (kind_ == kind_t::STRING) {
         using std::string;
         string_.~string();
@@ -228,7 +238,7 @@ Variable::Variable(
     file_(file),
     dimensions_(std::move(dimensions)),
     attributes_(std::move(attributes)),
-    layout_(std::move(layout))
+    layout_(layout)
 {
     auto size_from_file = layout_.size_with_padding;
     // the size coming from the file (in layout) is not reliable since it can
@@ -388,11 +398,7 @@ void Variable::write_fill_value(size_t step) {
 /******************************************************************************/
 
 Netcdf3File::Netcdf3File(std::string filename, File::Mode mode):
-    BigEndianFile(std::move(filename), mode),
-    dimensions_(),
-    attributes_(),
-    variables_(),
-    initialized_(false)
+    BigEndianFile(std::move(filename), mode)
 {
     if (mode == File::WRITE) {
         // nothing to do for now, the file will be intialized by a Netcdf3Builder
@@ -403,7 +409,7 @@ Netcdf3File::Netcdf3File(std::string filename, File::Mode mode):
     auto buffer = std::string(3, '\0');
 
     try {
-        this->read_char(&buffer[0], 3);
+        this->read_char(buffer.data(), 3);
     } catch (const FileError& e) {
         if (mode == File::APPEND) {
             // An empty file was opened in append mode, it will be initialized
@@ -482,7 +488,7 @@ void Netcdf3File::add_padding(int64_t size) {
 std::string Netcdf3File::read_pascal_string() {
     auto size = static_cast<size_t>(this->read_single_i32());
     auto value = std::string(size, '\0');
-    this->read_char(&value[0], size);
+    this->read_char(value.data(), size);
     this->skip_padding(static_cast<int64_t>(size));
     return value;
 }
@@ -532,7 +538,7 @@ Value Netcdf3File::read_attribute_value() {
     } else if (type == constants::NC_CHAR) {
         size = sizeof(char);
         auto str = std::string(static_cast<size_t>(count), '\0');
-        this->read_char(&str[0], count);
+        this->read_char(str.data(), count);
         // should we remove trailing NULL if there is any?
         value = Value(std::move(str));
     } else if (type == constants::NC_SHORT) {
@@ -598,7 +604,7 @@ void Netcdf3File::write_attribute_value(const Value& value) {
         size = sizeof(char);
         this->write_single_i32(constants::NC_CHAR);
 
-        auto str = value.as_string();
+        const auto& str = value.as_string();
         count = str.size();
 
         // we don't want NULL in strings
@@ -753,14 +759,13 @@ void Netcdf3Builder::add_variable(std::string name, VariableDefinition definitio
         }
     }
 
-    if (!(definition.type == constants::NC_CHAR ||
-          definition.type == constants::NC_BYTE ||
-          definition.type == constants::NC_SHORT ||
-          definition.type == constants::NC_INT ||
-          definition.type == constants::NC_FLOAT ||
-          definition.type == constants::NC_DOUBLE)
-        )
-    {
+    if (definition.type != constants::NC_CHAR
+        && definition.type != constants::NC_BYTE
+        && definition.type != constants::NC_SHORT
+        && definition.type != constants::NC_INT
+        && definition.type != constants::NC_FLOAT
+        && definition.type != constants::NC_DOUBLE
+    ) {
         throw file_error("invalid type for variable '{}'", name);
     }
 
@@ -803,7 +808,7 @@ void Netcdf3Builder::initialize(Netcdf3File* file) && {
     file->write_single_i32(constants::NC_VARIABLE);
     file->write_single_i32(static_cast<int32_t>(variables_.size()));
     for (auto it: std::move(variables_)) {
-        auto name = std::move(it.first);
+        auto name = it.first;
         auto variable = std::move(it.second);
 
         file->write_pascal_string(name);

@@ -1,9 +1,16 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
-#include "chemfiles/Property.hpp"
+#include <string>
+#include <utility>
+
 #include "chemfiles/error_fmt.hpp"
+#include "chemfiles/external/optional.hpp"
+#include "chemfiles/types.hpp"
+#include "chemfiles/unreachable.hpp"
 #include "chemfiles/warnings.hpp"
+
+#include "chemfiles/Property.hpp"
 using namespace chemfiles;
 
 bool Property::as_bool() const {
@@ -56,8 +63,9 @@ std::string Property::kind_as_string(Kind kind) {
         return "string";
     case VECTOR3D:
         return "Vector3D";
+    default:
+        unreachable();
     }
-    unreachable();
 }
 
 

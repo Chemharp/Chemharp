@@ -15,7 +15,7 @@
 #include "chemfiles/error_fmt.hpp"
 #include "chemfiles/Property.hpp"
 #include "chemfiles/Residue.hpp"
-#include "chemfiles/Topology.hpp"
+#include "chemfiles/Topology.hpp"  // IWYU pragma: keep
 
 #include "chemfiles/external/optional.hpp"
 

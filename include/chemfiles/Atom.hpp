@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 
 #include "chemfiles/exports.h"
 #include "chemfiles/Property.hpp"

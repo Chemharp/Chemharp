@@ -1,10 +1,13 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
+#include <cstddef>
 #include <cstdint>
+
 #include <array>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "chemfiles/types.hpp"
@@ -74,7 +77,8 @@ void CSSRFormat::read_next(Frame& frame) {
     }
 
     // Read unit cell
-    Vector3D lengths, angles;
+    Vector3D lengths;
+    Vector3D angles;
     scan(file_.readline().substr(38), lengths[0], lengths[1], lengths[2]);
     scan(file_.readline().substr(21), angles[0], angles[1], angles[2]);
     frame.set_cell({lengths, angles});
@@ -93,7 +97,9 @@ void CSSRFormat::read_next(Frame& frame) {
         auto line = file_.readline();
         unsigned atom_id = 0;
         std::string name;
-        double x = 0, y = 0, z = 0;
+        double x = 0;
+        double y = 0;
+        double z = 0;
         unsigned bonds[8] = {0};
         double charge = 0;
 
@@ -166,7 +172,7 @@ void CSSRFormat::write_next(const Frame& frame) {
     file_.print(" file created with chemfiles\n", frame.size());
 
     auto connectivity = std::vector<std::vector<size_t>>(frame.size());
-    for (auto& bond : frame.topology().bonds()) {
+    for (const auto& bond : frame.topology().bonds()) {
         if (bond[0] > 9999 || bond[1] > 9999) {
             warning("CCSR writer", "atomic index is too big for connectivity record, removing the bond");
             continue;
@@ -175,7 +181,7 @@ void CSSRFormat::write_next(const Frame& frame) {
         connectivity[bond[1]].push_back(bond[0]);
     }
 
-    auto& positions = frame.positions();
+    const auto& positions = frame.positions();
     auto cell_inv = frame.cell().matrix().invert();
     for (size_t i = 0; i<frame.size(); i++) {
         std::string atom_id;

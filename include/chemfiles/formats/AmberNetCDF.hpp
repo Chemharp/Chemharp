@@ -4,11 +4,13 @@
 #ifndef CHEMFILES_FORMAT_AMBER_NETCDF_HPP
 #define CHEMFILES_FORMAT_AMBER_NETCDF_HPP
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
 #include "chemfiles/File.hpp"
 #include "chemfiles/Format.hpp"
+#include "chemfiles/external/optional.hpp"
 
 #include "chemfiles/files/Netcdf3File.hpp"
 
@@ -26,8 +28,8 @@ class AmberNetCDFBase: public Format {
 public:
     AmberNetCDFBase(std::string convention, std::string path, File::Mode mode, File::Compression compression);
 
-    void read(Frame& frame) override final;
-    void read_step(size_t step, Frame& frame) override final;
+    void read(Frame& frame) final;
+    void read_step(size_t step, Frame& frame) final;
     void write(const Frame& frame) override;
 
 protected:

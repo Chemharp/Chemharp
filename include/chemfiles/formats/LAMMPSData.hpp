@@ -4,9 +4,13 @@
 #ifndef CHEMFILES_FORMAT_LAMMPS_DATA_HPP
 #define CHEMFILES_FORMAT_LAMMPS_DATA_HPP
 
+#include <cstddef>
 #include <cstdint>
+
+#include <string_view>
 #include <tuple>
 #include <limits>
+#include <utility>
 #include <vector>
 #include <string>
 #include <memory>
@@ -209,7 +213,7 @@ private:
 
     // =============== Data used for reading files
     /// Name of the atom style to use when reading the "Atoms" section
-    std::string atom_style_name_ = "";
+    std::string atom_style_name_;
     /// Atom style to use when reading the "Atoms" section
     atom_style style_;
     /// Number of atoms in the file

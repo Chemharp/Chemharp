@@ -1,4 +1,5 @@
 // From vmdconio.h
+#include <utility>
 #define VMDCON_WARN      2
 #define VMDCON_ERROR     3
 
@@ -8,8 +9,11 @@ extern "C" {
 }
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+
 #include <array>
+#include <functional>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -74,10 +78,10 @@ struct residue_info_t {
     }
 };
 
-inline void hash_combine(std::size_t&) { }
+inline void hash_combine(size_t& /*hash*/) { }
 
 template <typename T, typename... Tail>
-inline void hash_combine(std::size_t& seed, const T& v, Tail... tail) {
+inline void hash_combine(size_t& seed, const T& v, Tail... tail) {
     std::hash<T> hasher;
     seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     hash_combine(seed, tail...);
@@ -85,8 +89,8 @@ inline void hash_combine(std::size_t& seed, const T& v, Tail... tail) {
 
 namespace std {
     template<> struct hash<residue_info_t> {
-        std::size_t operator()(const residue_info_t &info) const {
-            std::size_t result = 0;
+        size_t operator()(const residue_info_t &info) const {
+            size_t result = 0;
             hash_combine(result, info.id, info.name, info.segid, info.chain);
             return result;
         }
@@ -94,10 +98,10 @@ namespace std {
 }
 
 template <MolfileFormat F> static int register_plugin(void* user_data, vmdplugin_t* vmd_plugin) {
-    auto user_plugin = static_cast<molfile_plugin_t**>(user_data);
+    auto* user_plugin = static_cast<molfile_plugin_t**>(user_data);
     assert(std::string(MOLFILE_PLUGIN_TYPE) == std::string(vmd_plugin->type));
 
-    auto plugin = reinterpret_cast<molfile_plugin_t*>(vmd_plugin);
+    auto* plugin = reinterpret_cast<molfile_plugin_t*>(vmd_plugin);
     // When this callback is called multiple times with more than one plugin,
     // only register the one whe want
     if (MolfilePluginData<F>().reader() == plugin->name) {
@@ -174,7 +178,7 @@ Molfile<F>::Molfile(std::string path, File::Mode mode, File::Compression compres
 }
 
 template <MolfileFormat F> Molfile<F>::~Molfile() {
-    if (data_) {
+    if (data_ != nullptr) {
         plugin_handle_->close_file_read(data_);
     }
     plugin_data_.fini();

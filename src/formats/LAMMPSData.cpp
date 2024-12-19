@@ -1,6 +1,7 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
+#include <cstddef>
 #include <cstdint>
 #include <cassert>
 #include <cmath>
@@ -8,6 +9,7 @@
 #include <tuple>
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 #include <algorithm>
 #include <string_view>
@@ -194,6 +196,8 @@ atom_data atom_style::read_line(std::string_view line, size_t index) const {
         // atom-ID atom-type x y z sub-style1 sub-style2 ...
         scan(line, d.index, d.type, d.x, d.y, d.z);
         break;
+    default:
+        unreachable();
     }
 
     if (d.index == 0) {
@@ -247,6 +251,7 @@ void LAMMPSDataFormat::read_next(Frame& frame) {
             skip_to_next_section();
             break;
         case NOT_A_SECTION:
+        default:
             unreachable();
         }
     }
@@ -554,29 +559,29 @@ static std::unordered_set<std::string_view> IGNORED_SECTIONS = {
     "AngleAngleTorsion Coeffs", "BondBond13 Coeffs", "AngleAngle Coeffs"
 };
 
-LAMMPSDataFormat::section_t LAMMPSDataFormat::get_section(std::string_view section) {
-    auto comment = split_comment(section);
-    if (section == "Atoms") {
+LAMMPSDataFormat::section_t LAMMPSDataFormat::get_section(std::string_view line) {
+    auto comment = split_comment(line);
+    if (line == "Atoms") {
         if (!comment.empty()) {
             atom_style_name_ = std::string(trim(comment));
         }
         return ATOMS;
-    } else if (section == "Bonds") {
+    } else if (line == "Bonds") {
         return BONDS;
-    } else if (section == "Velocities") {
+    } else if (line == "Velocities") {
         return VELOCITIES;
-    } else if (section == "Masses") {
+    } else if (line == "Masses") {
         return MASSES;
-    } else if (section == "Angles" || section == "Dihedrals" || section == "Impropers") {
+    } else if (line == "Angles" || line == "Dihedrals" || line == "Impropers") {
         // We don't use the angles, dihedral and improper sections, but we don't
         // send a warning for them, as they are guessed from the bonds
 
         // TODO: check that the angles and dihedral list matches
         return IGNORED;
-    } else if (IGNORED_SECTIONS.find(section) != IGNORED_SECTIONS.end()) {
-        if (section.find("Coeffs") == std::string::npos) {
+    } else if (IGNORED_SECTIONS.find(line) != IGNORED_SECTIONS.end()) {
+        if (line.find("Coeffs") == std::string::npos) {
             // Don't send a warning for force field parameters
-            warning("LAMMPS Data reader", "ignoring section '{}'", section);
+            warning("LAMMPS Data reader", "ignoring section '{}'", line);
         }
         return IGNORED;
     } else {
@@ -630,24 +635,24 @@ static atom_type make_atom_type(const Atom& atom) {
 }
 
 DataTypes::DataTypes(const Topology& topology) {
-    for (auto& atom: topology) {
+    for (const auto& atom: topology) {
         atoms_.insert(make_atom_type(atom));
     }
 
-    for (auto& bond: topology.bonds()) {
+    for (const auto& bond: topology.bonds()) {
         auto i = atom_type_id(topology[bond[0]]);
         auto j = atom_type_id(topology[bond[1]]);
         bonds_.insert(normalize_bond_type(i, j));
     }
 
-    for (auto& angle: topology.angles()) {
+    for (const auto& angle: topology.angles()) {
         auto i = atom_type_id(topology[angle[0]]);
         auto j = atom_type_id(topology[angle[1]]);
         auto k = atom_type_id(topology[angle[2]]);
         angles_.insert(normalize_angle_type(i, j, k));
     }
 
-    for (auto& dihedral: topology.dihedrals()) {
+    for (const auto& dihedral: topology.dihedrals()) {
         auto i = atom_type_id(topology[dihedral[0]]);
         auto j = atom_type_id(topology[dihedral[1]]);
         auto k = atom_type_id(topology[dihedral[2]]);
@@ -655,7 +660,7 @@ DataTypes::DataTypes(const Topology& topology) {
         dihedrals_.insert(normalize_dihedral_type(i, j, k, m));
     }
 
-    for (auto& improper: topology.impropers()) {
+    for (const auto& improper: topology.impropers()) {
         auto i = atom_type_id(topology[improper[0]]);
         auto j = atom_type_id(topology[improper[1]]);
         auto k = atom_type_id(topology[improper[2]]);
@@ -721,7 +726,7 @@ void LAMMPSDataFormat::write_next(const Frame& frame) {
     write_masses(types);
     write_atoms(types, frame);
     write_velocities(frame);
-    auto& topology = frame.topology();
+    const auto& topology = frame.topology();
     write_bonds(types, topology);
     write_angles(types, topology);
     write_dihedrals(types, topology);
@@ -761,7 +766,7 @@ void LAMMPSDataFormat::write_header(const DataTypes& types, const Frame& frame) 
 }
 
 void LAMMPSDataFormat::write_types(const DataTypes& types) {
-    auto& atoms = types.atoms().as_vec();
+    const auto& atoms = types.atoms().as_vec();
     if (!atoms.empty()) {
         file_.print("# Pair Coeffs\n");
         for (size_t i=0; i<atoms.size(); i++) {
@@ -769,7 +774,7 @@ void LAMMPSDataFormat::write_types(const DataTypes& types) {
         }
     }
 
-    auto& bonds = types.bonds().as_vec();
+    const auto& bonds = types.bonds().as_vec();
     if (!bonds.empty()) {
         file_.print("\n# Bond Coeffs\n");
         for (size_t i=0; i<bonds.size(); i++) {
@@ -780,7 +785,7 @@ void LAMMPSDataFormat::write_types(const DataTypes& types) {
         }
     }
 
-    auto& angles = types.angles().as_vec();
+    const auto& angles = types.angles().as_vec();
     if (!angles.empty()) {
         file_.print("\n# Angle Coeffs\n");
         for (size_t i=0; i<angles.size(); i++) {
@@ -792,7 +797,7 @@ void LAMMPSDataFormat::write_types(const DataTypes& types) {
         }
     }
 
-    auto& dihedrals = types.dihedrals().as_vec();
+    const auto& dihedrals = types.dihedrals().as_vec();
     if (!dihedrals.empty()) {
         file_.print("\n# Dihedrals Coeffs\n");
         for (size_t i=0; i<dihedrals.size(); i++) {
@@ -805,7 +810,7 @@ void LAMMPSDataFormat::write_types(const DataTypes& types) {
         }
     }
 
-    auto& impropers = types.impropers().as_vec();
+    const auto& impropers = types.impropers().as_vec();
     if (!impropers.empty()) {
         file_.print("\n# Impropers Coeffs\n");
         for (size_t i=0; i<impropers.size(); i++) {
@@ -821,7 +826,7 @@ void LAMMPSDataFormat::write_types(const DataTypes& types) {
 
 void LAMMPSDataFormat::write_masses(const DataTypes& types) {
     file_.print("\nMasses\n\n");
-    auto& atoms = types.atoms().as_vec();
+    const auto& atoms = types.atoms().as_vec();
     for (size_t i=0; i<atoms.size(); i++) {
         file_.print("{} {:#g} # {}\n", i + 1, atoms[i].second, atoms[i].first);
     }
@@ -832,7 +837,7 @@ void LAMMPSDataFormat::write_atoms(const DataTypes& types, const Frame& frame) {
     auto positions = frame.positions();
     auto molids = guess_molecules(frame);
     for (size_t i=0; i<frame.size(); i++) {
-        auto& atom = frame.topology()[i];
+        const auto& atom = frame.topology()[i];
         auto molid = molids[i];
         file_.print("{} {} {} {:#g} {:#g} {:#g} {:#g} # {}\n",
             i + 1, molid + 1, types.atom_type_id(atom) + 1, atom.charge(),

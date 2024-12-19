@@ -4,10 +4,13 @@
 #ifndef CHEMFILES_FORMAT_MOL2_HPP
 #define CHEMFILES_FORMAT_MOL2_HPP
 
+#include <cstddef>
 #include <cstdint>
+
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <utility>
 
 #include "chemfiles/File.hpp"
 #include "chemfiles/Format.hpp"

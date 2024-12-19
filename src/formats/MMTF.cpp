@@ -1,10 +1,15 @@
 // Chemfiles, a modern library for chemistry file reading and writing
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
+#include <cstddef>
 #include <cstdint>
 #include <cassert>
+
+#include <algorithm>
 #include <array>
+#include <iterator>
 #include <string>
+#include <utility>
 #include <vector>
 #include <memory>
 #include <exception>
@@ -305,9 +310,10 @@ void MMTFFormat::read_group(Frame& frame, size_t group_type, Residue& residue, s
         atom.set_charge(static_cast<double>(group.formalChargeList[l]));
 
         const auto& altLocList = structure_.altLocList;
-        if (!mmtf::isDefaultValue(altLocList) && !(
-            altLocList[atomIndex_] == ' ' ||
-            altLocList[atomIndex_] == 0x00)) {
+        if (!mmtf::isDefaultValue(altLocList)
+            && altLocList[atomIndex_] != ' '
+            && altLocList[atomIndex_] != 0x00
+        ) {
             atom.set("altloc", std::string(1, altLocList[atomIndex_]));
         }
 
@@ -372,7 +378,7 @@ void MMTFFormat::apply_symmetry(Frame& frame) {
             }
 
             // ncs is a 4x4 matrix stored in column major order.
-            auto& ncs = transform.matrix;
+            const auto& ncs = transform.matrix;
             auto rotation = Matrix3D(
                 static_cast<double>(ncs[0]), static_cast<double>(ncs[4]), static_cast<double>(ncs[8]),
                 static_cast<double>(ncs[1]), static_cast<double>(ncs[5]), static_cast<double>(ncs[9]),
@@ -408,7 +414,7 @@ void MMTFFormat::apply_symmetry(Frame& frame) {
 
                 // Copy over everything except the atoms
                 auto new_residue = Residue(residue.name(), *residue.id());
-                for (auto& prop : residue.properties()) {
+                for (const auto& prop : residue.properties()) {
                     new_residue.set(prop.first, prop.second);
                 }
 
@@ -425,7 +431,7 @@ void MMTFFormat::apply_symmetry(Frame& frame) {
                     auto new_atom = frame[atom_id];
                     auto new_position = rotation * frame.positions()[atom_id] + translation;
 
-                    frame.add_atom(std::move(new_atom), std::move(new_position));
+                    frame.add_atom(std::move(new_atom), new_position);
                     new_residue.add_atom(frame.size() - 1);
                     old_to_sym[atom_id] = frame.size() - 1;
                 }
@@ -438,7 +444,7 @@ void MMTFFormat::apply_symmetry(Frame& frame) {
             }
 
             for (size_t i = 0; i < original_bond_size; ++i) {
-                auto& bond = frame.topology().bonds()[i];
+                const auto& bond = frame.topology().bonds()[i];
 
                 // bonds should be sorted so that when we hit original size, we're done
                 if (bond[0] >= original_size || bond[1] >= original_size) {
@@ -469,7 +475,7 @@ void MMTFFormat::write(const Frame& frame) {
     structure_.numAtoms += static_cast<int32_t>(frame.size());
 
     if (mmtf::isDefaultValue(structure_.unitCell)) {
-        auto& cell = frame.cell();
+        const auto& cell = frame.cell();
         auto lengths = cell.lengths();
         auto angles = cell.angles();
         structure_.unitCell.resize(6);
@@ -655,7 +661,7 @@ int8_t bond_order_to_mmtf(Bond::BondOrder order) {
             "bond order '{}' can not be represented in MMTF, defaulting to single bond",
             name
         );
-        return 1;
+        return static_cast<int8_t>(1);
     };
 
     switch(order) {

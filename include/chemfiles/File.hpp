@@ -4,8 +4,11 @@
 #ifndef CHEMFILES_FILES_HPP
 #define CHEMFILES_FILES_HPP
 
+#include <cstddef>
 #include <cstdint>
+
 #include <string>
+#include <utility>
 #include <vector>
 #include <memory>
 #include <string_view>

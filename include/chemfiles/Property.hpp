@@ -4,9 +4,10 @@
 #ifndef CHEMFILES_PROPERTY_HPP
 #define CHEMFILES_PROPERTY_HPP
 
-#include <new>
+#include <cstddef>
 #include <string>
 #include <map>
+#include <utility>
 
 #include "chemfiles/types.hpp"
 #include "chemfiles/exports.h"
@@ -98,6 +99,8 @@ public:
         case VECTOR3D:
             new (&this->vector3d_) Vector3D(other.vector3d_);
             break;
+        default:
+            unreachable();
         }
         return *this;
     }
@@ -118,6 +121,8 @@ public:
         case VECTOR3D:
             new (&this->vector3d_) Vector3D(other.vector3d_);
             break;
+        default:
+            unreachable();
         }
         return *this;
     }
@@ -192,8 +197,9 @@ inline bool operator==(const Property& lhs, const Property& rhs) {
         return lhs.double_ == rhs.double_;
     case Property::VECTOR3D:
         return lhs.vector3d_ == rhs.vector3d_;
+    default:
+        unreachable();
     }
-    unreachable();
 }
 
 inline bool operator!=(const Property& lhs, const Property& rhs) {

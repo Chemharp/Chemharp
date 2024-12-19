@@ -2,16 +2,18 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 
 #include <cmath>
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
-#include <exception>
 #include <string_view>
 
 #include "chemfiles/types.hpp"
+#include "chemfiles/unreachable.hpp"
 #include "chemfiles/utils.hpp"
 #include "chemfiles/parse.hpp"
 #include "chemfiles/warnings.hpp"
@@ -197,8 +199,8 @@ void SDFFormat::read_next(Frame& frame) {
 }
 
 void SDFFormat::write_next(const Frame& frame) {
-    auto& topology = frame.topology();
-    auto& positions = frame.positions();
+    const auto& topology = frame.topology();
+    const auto& positions = frame.positions();
     assert(frame.size() == topology.size());
 
     auto frame_name = frame.get<Property::STRING>("name").value_or("");
@@ -286,7 +288,7 @@ void SDFFormat::write_next(const Frame& frame) {
 
     file_.print("M  END\n");
 
-    for (auto& prop : frame.properties()) {
+    for (const auto& prop : frame.properties()) {
         if (prop.first == "name") {
             continue;
         }
@@ -310,6 +312,8 @@ void SDFFormat::write_next(const Frame& frame) {
                 prop.second.as_vector3d()[2]
             );
             break;
+        default:
+            unreachable();
         }
     }
 

@@ -13,7 +13,6 @@
 
 #include "chemfiles/capi/property.h"
 
-#include "chemfiles/types.hpp"
 #include "chemfiles/Property.hpp"
 
 using namespace chemfiles;

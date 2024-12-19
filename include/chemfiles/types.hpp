@@ -47,6 +47,8 @@ public:
     using super::operator[];
     using super::begin;
     using super::end;
+    using super::data;
+    using super::size;
 
     /// Compute the euclidean norm of this Vector3D.
     ///

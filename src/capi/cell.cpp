@@ -13,7 +13,7 @@
 
 #include "chemfiles/types.hpp"
 #include "chemfiles/UnitCell.hpp"
-#include "chemfiles/Frame.hpp"
+#include "chemfiles/Frame.hpp"  // IWYU pragma: keep
 using namespace chemfiles;
 
 static_assert(sizeof(chfl_cellshape) == sizeof(int), "Wrong size for chfl_cellshape enum");
@@ -40,7 +40,7 @@ extern "C" CHFL_CELL* chfl_cell_from_matrix(const chfl_vector3d matrix[3]) {
     CHECK_POINTER_GOTO(matrix);
     CHFL_ERROR_GOTO(
         auto cpp_matrix = Matrix3D::zero();
-        std::copy(&matrix[0][0], &matrix[0][0] + 9, &cpp_matrix[0][0]);
+        std::copy(&matrix[0][0], &matrix[0][0] + 9, cpp_matrix[0].data());
         cell = shared_allocator::make_shared<UnitCell>(cpp_matrix);
     )
     return cell;
@@ -86,7 +86,7 @@ extern "C" chfl_status chfl_cell_lengths(const CHFL_CELL* const cell, chfl_vecto
     CHECK_POINTER(lengths);
     CHFL_ERROR_CATCH(
         auto cell_lengths = cell->lengths();
-        std::copy(&cell_lengths[0], &cell_lengths[0] + 3, lengths);
+        std::copy(cell_lengths.data(), cell_lengths.data() + 3, lengths);
     )
 }
 
@@ -103,7 +103,7 @@ extern "C" chfl_status chfl_cell_angles(const CHFL_CELL* const cell, chfl_vector
     CHECK_POINTER(angles);
     CHFL_ERROR_CATCH(
         auto cell_angles = cell->angles();
-        std::copy(&cell_angles[0], &cell_angles[0] + 3, angles);
+        std::copy(cell_angles.data(), cell_angles.data() + 3, angles);
     )
 }
 
@@ -119,7 +119,7 @@ extern "C" chfl_status chfl_cell_matrix(const CHFL_CELL* const cell, chfl_vector
     CHECK_POINTER(matrix);
     CHFL_ERROR_CATCH(
         auto cell_matrix = cell->matrix();
-        std::copy(&cell_matrix[0][0], &cell_matrix[0][0] + 9, &matrix[0][0]);
+        std::copy(cell_matrix[0].data(), cell_matrix[0].data() + 9, &matrix[0][0]);
     )
 }
 

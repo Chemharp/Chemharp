@@ -4,7 +4,7 @@
 #ifndef CHEMFILES_MEMORY_BUFFER_HPP
 #define CHEMFILES_MEMORY_BUFFER_HPP
 
-#include <vector>
+#include <cstddef>
 
 #include "chemfiles/File.hpp"
 
@@ -33,9 +33,9 @@ public:
 
 
     MemoryBuffer(const MemoryBuffer&) = delete;
-    MemoryBuffer(MemoryBuffer&&);
+    MemoryBuffer(MemoryBuffer&&) noexcept;
     MemoryBuffer& operator=(const MemoryBuffer&) = delete;
-    MemoryBuffer& operator=(MemoryBuffer&&);
+    MemoryBuffer& operator=(MemoryBuffer&&) noexcept;
     ~MemoryBuffer();
 
     /// Get the size of the buffer, i.e. the amount of data currently written

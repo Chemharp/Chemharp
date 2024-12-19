@@ -4,6 +4,7 @@
 #ifndef CHEMFILES_SELECTION_HPP
 #define CHEMFILES_SELECTION_HPP
 
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
@@ -111,8 +112,8 @@ public:
     explicit Selection(std::string selection);
 
     ~Selection();
-    Selection(Selection&& other);
-    Selection& operator=(Selection&& other);
+    Selection(Selection&& other) noexcept;
+    Selection& operator=(Selection&& other) noexcept;
 
     Selection(const Selection& other) = delete;
     Selection& operator=(const Selection& other) = delete;

@@ -2,10 +2,12 @@
 // Copyright (C) Guillaume Fraux and contributors -- BSD license
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "chemfiles/error_fmt.hpp"
@@ -215,7 +217,7 @@ TRRFormat::FrameHeader TRRFormat::read_frame_header() {
         // determine real representation (float or double)
         size_t nflsize = 0;
         if (header.box_size > 0) {
-            nflsize = header.box_size / (3 * 3);
+            nflsize = header.box_size / 9;
         } else if (header.natoms > 0) {
             if (header.x_size > 0) {
                 nflsize = header.x_size / (header.natoms * 3);
@@ -258,14 +260,15 @@ void TRRFormat::determine_frame_offsets() {
     natoms_ = header.natoms;
 
     auto calc_framebytes = [&header]() {
-        return static_cast<uint64_t>(
+        return (
             header.ir_size + header.e_size + header.box_size + header.vir_size + header.pres_size +
-            header.top_size + header.sym_size + header.x_size + header.v_size + header.f_size);
+            header.top_size + header.sym_size + header.x_size + header.v_size + header.f_size
+        );
     };
     uint64_t framebytes = calc_framebytes();
 
-    const uint64_t filesize = file_.file_size();
-    const size_t est_nframes = static_cast<size_t>(filesize / (framebytes + TRR_MIN_HEADER_SIZE));
+    uint64_t filesize = file_.file_size();
+    auto est_nframes = static_cast<size_t>(filesize / (framebytes + TRR_MIN_HEADER_SIZE));
 
     frame_offsets_.clear();
     frame_offsets_.emplace_back(0);
@@ -274,7 +277,7 @@ void TRRFormat::determine_frame_offsets() {
     while (true) {
         file_.skip(framebytes);
 
-        const uint64_t frame_pos = file_.tell();
+        auto frame_pos = file_.tell();
         try {
             header = read_frame_header();
         } catch (const Error&) {
@@ -339,7 +342,7 @@ void TRRFormat::write(const Frame& frame) {
     };
     write_frame_header(header);
 
-    std::vector<float> box(3 * 3);
+    std::vector<float> box(9);
     if (box_size > 0) {
         get_cell(box, frame);
         file_.write_f32(box);
@@ -385,7 +388,7 @@ void TRRFormat::write_frame_header(const FrameHeader& header) {
 }
 
 void get_cell(std::vector<float>& box, const Frame& frame) {
-    assert(box.size() == 3 * 3);
+    assert(box.size() == 9);
     // Factor 10 because the lengths are in nm in the TRR format
     auto matrix = frame.cell().matrix() / 10.0;
     box[0] = static_cast<float>(matrix[0][0]);

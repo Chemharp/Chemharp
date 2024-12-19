@@ -13,11 +13,11 @@
 
 using namespace chemfiles;
 
-NumericValues::NumericValues(NumericValues&& other): NumericValues(0) {
+NumericValues::NumericValues(NumericValues&& other) noexcept: NumericValues(0) {
     *this = std::move(other);
 }
 
-NumericValues& NumericValues::operator=(NumericValues&& other) {
+NumericValues& NumericValues::operator=(NumericValues&& other) noexcept {
     std::free(heap_);
 
     this->value_ = other.value_;
@@ -55,7 +55,7 @@ void NumericValues::reserve(size_t size) {
             return;
         }
 
-        auto heap = static_cast<double*>(std::realloc(heap_, (size + 2) * sizeof(double)));
+        auto *heap = static_cast<double*>(std::realloc(heap_, (size + 2) * sizeof(double)));
         if (heap == nullptr) {
             throw error("could not allocate memory for NumericValues");
         }

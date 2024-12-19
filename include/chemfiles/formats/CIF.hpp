@@ -7,9 +7,11 @@
 #include "chemfiles/config.h"  // IWYU pragma: keep
 #ifndef CHFL_DISABLE_GEMMI
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <memory>
+#include <utility>
 
 #include "gemmi/small.hpp"
 

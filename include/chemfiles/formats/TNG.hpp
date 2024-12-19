@@ -4,7 +4,9 @@
 #ifndef CHEMFILES_FORMAT_TNG_HPP
 #define CHEMFILES_FORMAT_TNG_HPP
 
+#include <cstddef>
 #include <cstdint>
+
 #include <string>
 #include <vector>
 

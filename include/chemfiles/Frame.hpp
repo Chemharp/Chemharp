@@ -4,7 +4,9 @@
 #ifndef CHEMFILES_FRAME_HPP
 #define CHEMFILES_FRAME_HPP
 
+#include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "chemfiles/exports.h"

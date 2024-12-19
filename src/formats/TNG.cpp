@@ -4,8 +4,10 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstdint>
+
 #include <array>
 #include <string>
+#include <utility>
 #include <vector>
 #include <cassert>
 
@@ -185,6 +187,10 @@ void TNGFormat::read_velocities(Frame& frame) {
         throw format_error(
             "fatal error in the TNG library while calling 'tng_util_vel_read_range'"
         );
+    default:
+        throw format_error(
+            "unknown error in the TNG library while calling 'tng_util_vel_read_range'"
+        );
     }
 
     frame.add_velocities();
@@ -215,6 +221,10 @@ void TNGFormat::read_cell(Frame& frame) {
     case TNG_CRITICAL:
         throw format_error(
             "fatal error in the TNG library while calling 'tng_util_box_shape_read_range'"
+        );
+    default:
+        throw format_error(
+            "unknown error in the TNG library while calling 'tng_util_box_shape_read_range'"
         );
     }
 

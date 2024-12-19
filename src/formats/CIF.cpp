@@ -5,11 +5,13 @@
 #ifndef CHFL_DISABLE_GEMMI
 
 #include <cassert>
+#include <cstddef>
 #include <cmath>
 
 #include <array>
 #include <vector>
 #include <string>
+#include <utility>
 #include <exception>
 
 #include <gemmi/cif.hpp>
@@ -100,12 +102,12 @@ void CIFFormat::read_step(const size_t step, Frame& frame) {
 
     UnitCell cell;
     // Take care of the "special case" used to flag an infinite cell
-    if (!(std::abs(structure.cell.a - 1) < 1.e-3
-       && std::abs(structure.cell.b - 1) < 1.e-3
-       && std::abs(structure.cell.c - 1) < 1.e-3
-       && std::abs(structure.cell.alpha - 90) < 1.e-3
-       && std::abs(structure.cell.beta - 90) < 1.e-3
-       && std::abs(structure.cell.gamma - 90) < 1.e-3)) {
+    if (std::abs(structure.cell.a - 1) >= 1.e-3
+       || std::abs(structure.cell.b - 1) >= 1.e-3
+       || std::abs(structure.cell.c - 1) >= 1.e-3
+       || std::abs(structure.cell.alpha - 90) >= 1.e-3
+       || std::abs(structure.cell.beta - 90) >= 1.e-3
+       || std::abs(structure.cell.gamma - 90) >= 1.e-3) {
         cell = UnitCell(
             {structure.cell.a, structure.cell.b, structure.cell.c},
             {structure.cell.alpha, structure.cell.beta, structure.cell.gamma}

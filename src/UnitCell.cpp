@@ -148,12 +148,12 @@ static bool is_orthorhombic(const Vector3D& lengths, const Vector3D& angles) {
 
 UnitCell::UnitCell(): UnitCell({0, 0, 0}) {}
 
-UnitCell::UnitCell(Vector3D lengths): UnitCell(std::move(lengths), {90, 90, 90}) {}
+UnitCell::UnitCell(Vector3D lengths): UnitCell(lengths, {90, 90, 90}) {}
 
 UnitCell::UnitCell(Vector3D lengths, Vector3D angles):
-    UnitCell(cell_matrix_from_lenths_angles(std::move(lengths), std::move(angles))) {}
+    UnitCell(cell_matrix_from_lenths_angles(lengths, angles)) {}
 
-UnitCell::UnitCell(Matrix3D matrix): matrix_(std::move(matrix)), matrix_inv_(Matrix3D::unit()) {
+UnitCell::UnitCell(Matrix3D matrix): matrix_(matrix), matrix_inv_(Matrix3D::unit()) {
     auto determinant = matrix_.determinant();
     if (determinant < 0.0) {
         throw error("invalid unit cell matrix with negative determinant");
@@ -189,8 +189,9 @@ double UnitCell::volume() const {
     case ORTHORHOMBIC:
     case TRICLINIC:
         return matrix_.determinant();
+    default:
+        unreachable();
     }
-    unreachable();
 }
 
 void UnitCell::set_shape(CellShape shape) {
@@ -226,8 +227,9 @@ Vector3D UnitCell::lengths() const {
         return {matrix_[0][0], matrix_[1][1], matrix_[2][2]};
     case TRICLINIC:
         return calc_lengths_from_cell_matrix(matrix_);
+    default:
+        unreachable();
     }
-    unreachable();
 }
 
 Vector3D UnitCell::angles() const {
@@ -237,8 +239,9 @@ Vector3D UnitCell::angles() const {
         return {90, 90, 90};
     case TRICLINIC:
         return calc_angles_from_cell_matrix(matrix_);
+    default:
+        unreachable();
     }
-    unreachable();
 }
 
 void UnitCell::set_lengths(Vector3D lengths) {
@@ -253,7 +256,7 @@ void UnitCell::set_lengths(Vector3D lengths) {
     }
 
     // Reset the unit cell, and remove any existing rotation.
-    *this = UnitCell(std::move(lengths), this->angles());
+    *this = UnitCell(lengths, this->angles());
 }
 
 void UnitCell::set_angles(Vector3D angles) {
@@ -268,7 +271,7 @@ void UnitCell::set_angles(Vector3D angles) {
     }
 
     // Reset the unit cell, and remove any existing rotation.
-    *this = UnitCell(this->lengths(), std::move(angles));
+    *this = UnitCell(this->lengths(), angles);
 }
 
 Vector3D UnitCell::wrap_orthorhombic(const Vector3D& vector) const {
@@ -290,14 +293,15 @@ Vector3D UnitCell::wrap_triclinic(const Vector3D& vector) const {
 
 Vector3D UnitCell::wrap(const Vector3D& vector) const {
     switch (shape_) {
-        case INFINITE:
-            return vector;
-        case ORTHORHOMBIC:
-            return wrap_orthorhombic(vector);
-        case TRICLINIC:
-            return wrap_triclinic(vector);
+    case INFINITE:
+        return vector;
+    case ORTHORHOMBIC:
+        return wrap_orthorhombic(vector);
+    case TRICLINIC:
+        return wrap_triclinic(vector);
+    default:
+        unreachable();
     }
-    unreachable();
 }
 
 namespace chemfiles {
